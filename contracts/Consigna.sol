@@ -59,6 +59,9 @@ contract Consigna {
     mapping(address => bytes32[]) private issuerInvoices;
 
     constructor(address usdc, address eurc) {
+        // Both tokens are immutable. A zero or duplicate address would make the allowlist wrong forever.
+        if (usdc == address(0) || usdc == eurc) revert TokenNotAllowed(usdc);
+        if (eurc == address(0)) revert TokenNotAllowed(eurc);
         USDC = usdc;
         EURC = eurc;
     }

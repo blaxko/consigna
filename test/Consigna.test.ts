@@ -246,6 +246,30 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
     });
   });
 
+  describe("security review: constructor config and ref byte length", () => {
+    it("rejects a zero or duplicate token address at deploy, because the allowlist is immutable", async () => {
+      const zero = "0x0000000000000000000000000000000000000000";
+      await expectRevert(
+        hre.viem.deployContract("Consigna", [zero, c.eurc.address]),
+        "TokenNotAllowed",
+      );
+      await expectRevert(
+        hre.viem.deployContract("Consigna", [c.usdc.address, zero]),
+        "TokenNotAllowed",
+      );
+      await expectRevert(
+        hre.viem.deployContract("Consigna", [c.usdc.address, c.usdc.address]),
+        "TokenNotAllowed",
+      );
+    });
+
+    it("measures the ref in bytes: 16 two-byte characters (32 bytes) pass, 17 (34 bytes) revert", async () => {
+      const { id } = await create(c, "é".repeat(16));
+      expect((await c.consigna.read.getInvoice([id])).status).to.equal(STATUS.Open);
+      await expectRevert(create(c, "é".repeat(17)), "InvalidRef");
+    });
+  });
+
   describe("views", () => {
     it("isAllowedToken is true for USDC and EURC only", async () => {
       expect(await c.consigna.read.isAllowedToken([c.usdc.address])).to.equal(true);
