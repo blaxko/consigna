@@ -41,8 +41,8 @@ Pin exact versions at install time (`npm i -E`) and commit the lockfile. Keep th
 | Runtime | Node.js LTS | 22.x or 24.x (even-numbered LTS only) |
 | Contract language | Solidity | **0.8.26** (exact, optimizer on, 200 runs) |
 | Contract libs | `@openzeppelin/contracts` | 5.x (`SafeERC20`, `IERC20`) |
-| Contract tooling | `hardhat` | 2.22.x |
-| | `@nomicfoundation/hardhat-toolbox-viem` | 3.x (includes viem, chai, solidity-coverage) |
+| Contract tooling | `hardhat` | 2.26.x (pinned 2.26.5). Toolbox 3.0.0 pulls `hardhat-verify` 2.1.3, which needs Hardhat ≥ 2.26, so 2.22.x cannot resolve. |
+| | `@nomicfoundation/hardhat-toolbox-viem` | 3.0.0, the only 3.x release (includes viem, chai, solidity-coverage) |
 | | `dotenv` | 16.x |
 | | `tsx` / TypeScript | 5.x |
 | Frontend | `vite` + `@vitejs/plugin-react` | 6.x |
@@ -169,15 +169,17 @@ Times are Lagos (UTC+1). Exit checks reference the PRD's acceptance criteria.
 ```powershell
 # --- one-time scaffold (repo root) ---
 npm init -y
-npm i -D -E hardhat @nomicfoundation/hardhat-toolbox-viem typescript tsx dotenv
+npm i -D -E hardhat@2.26.5 @nomicfoundation/hardhat-toolbox-viem@3.0.0 typescript tsx dotenv
 npm i -E @openzeppelin/contracts
-npx hardhat init                       # choose: TypeScript + viem project
 copy .env.example .env                 # then fill DEPLOYER_KEY, PAYER_KEY, ARC_RPC
+# (hardhat.config.ts is hand-written: `npx hardhat init` is interactive and was not used)
 
 # --- contracts ---
 npx hardhat compile
-npx hardhat test                       # local in-memory network only
-npx hardhat coverage                   # must be 100% branches for Consigna.sol
+npm run test                           # = npx hardhat test; local in-memory network only
+npm run coverage                       # must be 100% branches for Consigna.sol
+#   Without npm, PowerShell:  $env:SOLIDITY_COVERAGE="true"; npx hardhat coverage
+#   The hardhat-viem plugin refuses to run coverage unless SOLIDITY_COVERAGE=true is set.
 
 # --- Arc mainnet (chainId 5042) ---
 npx hardhat run scripts/deploy.ts --network arc
