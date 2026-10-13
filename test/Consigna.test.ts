@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { encodeAbiParameters, getAddress, keccak256, parseEventLogs, stringToHex } from "viem";
+import { encodeAbiParameters, getAddress, keccak256, parseEventLogs, stringToHex, type Address, type Hex } from "viem";
 
 // Status enum order in Consigna.sol: None, Open, Paid, Cancelled
 const STATUS = { None: 0, Open: 1, Paid: 2, Cancelled: 3 } as const;
@@ -19,10 +19,39 @@ async function deploy() {
 }
 type Ctx = Awaited<ReturnType<typeof deploy>>;
 
+// viem types contract reads as unknown when the ABI is not generated into typechain.
+// These helpers give the reads their real shapes, so the assertions type-check.
+type Invoice = {
+  issuer: Address;
+  token: Address;
+  amount: bigint;
+  status: number;
+  payer: Address;
+  createdAt: number;
+  paidAt: number;
+  paidBlock: bigint;
+  detailsHash: Hex;
+  ref: string;
+};
+const getInv = async (c: Ctx, id: Hex) => (await c.consigna.read.getInvoice([id])) as Invoice;
+const idOf = async (c: Ctx, issuer: Address, ref: string) => (await c.consigna.read.idFor([issuer, ref])) as Hex;
+const balanceOf = async (c: Ctx, who: Address) => (await c.usdc.read.balanceOf([who])) as bigint;
+const isAllowed = async (c: Ctx, token: Address) => (await c.consigna.read.isAllowedToken([token])) as boolean;
+const countOf = async (c: Ctx, issuer: Address) => (await c.consigna.read.invoiceCount([issuer])) as bigint;
+const pageOf = async (c: Ctx, issuer: Address, offset: bigint, limit: bigint) =>
+  (await c.consigna.read.invoicesOf([issuer, offset, limit])) as Hex[];
+
+/** Decodes the named events from a receipt. The cast reflects the untyped ABI, not a runtime change. */
+function decodedEvents(c: Ctx, receipt: { logs: unknown[] }, eventName: string) {
+  return parseEventLogs({ abi: c.consigna.abi, logs: receipt.logs as never, eventName }) as unknown as {
+    args: Record<string, unknown>;
+  }[];
+}
+
 async function create(
   c: Ctx,
   ref = REF,
-  opts: { token?: `0x${string}`; amount?: bigint; from?: Ctx["issuer"] } = {},
+  opts: { token?: Address; amount?: bigint; from?: Ctx["issuer"] } = {},
 ) {
   const from = opts.from ?? c.issuer;
   const hash = await c.consigna.write.createInvoice(
@@ -30,7 +59,7 @@ async function create(
     { account: from.account },
   );
   const receipt = await c.publicClient.waitForTransactionReceipt({ hash });
-  const id = await c.consigna.read.idFor([from.account.address, ref]);
+  const id = await idOf(c, from.account.address, ref);
   return { id, receipt };
 }
 
@@ -39,7 +68,7 @@ async function fund(c: Ctx, wallet: Ctx["payer"], amount: bigint) {
   await c.usdc.write.approve([c.consigna.address, amount], { account: wallet.account });
 }
 
-async function pay(c: Ctx, id: `0x${string}`, wallet: Ctx["payer"]) {
+async function pay(c: Ctx, id: Hex, wallet: Ctx["payer"]) {
   const hash = await c.consigna.write.pay([id], { account: wallet.account });
   return c.publicClient.waitForTransactionReceipt({ hash });
 }
@@ -79,7 +108,7 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
     it("creates an Open invoice with the given amount and emits InvoiceCreated", async () => {
       const { id, receipt } = await create(c);
 
-      const inv = await c.consigna.read.getInvoice([id]);
+      const inv = await getInv(c, id);
       expect(inv.status).to.equal(STATUS.Open);
       expect(inv.amount).to.equal(USDC_AMOUNT);
       expect(getAddress(inv.issuer)).to.equal(getAddress(c.issuer.account.address));
@@ -87,7 +116,7 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
       expect(inv.ref).to.equal(REF);
       expect(inv.detailsHash).to.equal(DETAILS);
 
-      const events = parseEventLogs({ abi: c.consigna.abi, logs: receipt.logs, eventName: "InvoiceCreated" });
+      const events = decodedEvents(c, receipt, "InvoiceCreated");
       expect(events).to.have.length(1);
       expect(events[0].args.id).to.equal(id);
       expect(events[0].args.amount).to.equal(USDC_AMOUNT);
@@ -100,23 +129,23 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
       const { id } = await create(c);
       await fund(c, c.payer, USDC_AMOUNT);
 
-      const issuerBefore = await c.usdc.read.balanceOf([c.issuer.account.address]);
-      const payerBefore = await c.usdc.read.balanceOf([c.payer.account.address]);
+      const issuerBefore = await balanceOf(c, c.issuer.account.address);
+      const payerBefore = await balanceOf(c, c.payer.account.address);
 
       const receipt = await pay(c, id, c.payer);
 
-      expect((await c.usdc.read.balanceOf([c.issuer.account.address])) - issuerBefore).to.equal(USDC_AMOUNT);
-      expect((await c.usdc.read.balanceOf([c.payer.account.address])) - payerBefore).to.equal(-USDC_AMOUNT);
-      expect(await c.usdc.read.balanceOf([c.consigna.address])).to.equal(0n);
+      expect((await balanceOf(c, c.issuer.account.address)) - issuerBefore).to.equal(USDC_AMOUNT);
+      expect((await balanceOf(c, c.payer.account.address)) - payerBefore).to.equal(-USDC_AMOUNT);
+      expect(await balanceOf(c, c.consigna.address)).to.equal(0n);
 
-      const inv = await c.consigna.read.getInvoice([id]);
+      const inv = await getInv(c, id);
       expect(inv.status).to.equal(STATUS.Paid);
       expect(getAddress(inv.payer)).to.equal(getAddress(c.payer.account.address));
       // uint64 fields come back from viem as number, block numbers as bigint
       expect(BigInt(inv.paidBlock)).to.equal(receipt.blockNumber);
       expect(Number(inv.paidAt)).to.be.greaterThan(0);
 
-      const events = parseEventLogs({ abi: c.consigna.abi, logs: receipt.logs, eventName: "InvoicePaid" });
+      const events = decodedEvents(c, receipt, "InvoicePaid");
       expect(events).to.have.length(1);
       expect(events[0].args.id).to.equal(id);
       expect(events[0].args.amount).to.equal(USDC_AMOUNT);
@@ -130,9 +159,8 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
       await fund(c, c.stranger, USDC_AMOUNT);
       await pay(c, id, c.payer);
 
-      const usdc = c.usdc;
       const addrs = [c.payer, c.stranger, c.issuer].map((w) => w.account.address);
-      const before = await Promise.all(addrs.map((a) => usdc.read.balanceOf([a])));
+      const before = await Promise.all(addrs.map((a) => balanceOf(c, a)));
 
       for (const w of [c.payer, c.stranger, c.issuer]) {
         const text = await expectRevert(c.consigna.write.pay([id], { account: w.account }), "AlreadyPaid");
@@ -140,7 +168,7 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
         expect(text.toLowerCase()).to.include(c.payer.account.address.toLowerCase());
       }
 
-      const after = await Promise.all(addrs.map((a) => usdc.read.balanceOf([a])));
+      const after = await Promise.all(addrs.map((a) => balanceOf(c, a)));
       expect(after).to.deep.equal(before);
     });
   });
@@ -169,8 +197,8 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
       const hash = await c.consigna.write.cancel([id], { account: c.issuer.account });
       const receipt = await c.publicClient.waitForTransactionReceipt({ hash });
 
-      expect((await c.consigna.read.getInvoice([id])).status).to.equal(STATUS.Cancelled);
-      const events = parseEventLogs({ abi: c.consigna.abi, logs: receipt.logs, eventName: "InvoiceCancelled" });
+      expect((await getInv(c, id)).status).to.equal(STATUS.Cancelled);
+      const events = decodedEvents(c, receipt, "InvoiceCancelled");
       expect(events).to.have.length(1);
       expect(events[0].args.id).to.equal(id);
     });
@@ -197,8 +225,8 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
 
     it("accepts EURC as well as USDC", async () => {
       const { id } = await create(c, "EUR-1", { token: c.eurc.address });
-      expect((await c.consigna.read.getInvoice([id])).status).to.equal(STATUS.Open);
-      expect(await c.consigna.read.isAllowedToken([c.eurc.address])).to.equal(true);
+      expect((await getInv(c, id)).status).to.equal(STATUS.Open);
+      expect(await isAllowed(c, c.eurc.address)).to.equal(true);
     });
 
     it("reverts InvalidAmount for a zero amount", async () => {
@@ -209,7 +237,7 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
       await expectRevert(create(c, ""), "InvalidRef");
       await expectRevert(create(c, "x".repeat(33)), "InvalidRef");
       const { id } = await create(c, "x".repeat(32));
-      expect((await c.consigna.read.getInvoice([id])).status).to.equal(STATUS.Open);
+      expect((await getInv(c, id)).status).to.equal(STATUS.Open);
     });
 
     it("reverts RefAlreadyUsed for a repeated ref, including after cancel", async () => {
@@ -225,8 +253,8 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
       const a = await create(c, "INV-1", { from: c.issuer });
       const b = await create(c, "INV-1", { from: c.otherIssuer });
       expect(a.id).to.not.equal(b.id);
-      expect((await c.consigna.read.getInvoice([a.id])).status).to.equal(STATUS.Open);
-      expect((await c.consigna.read.getInvoice([b.id])).status).to.equal(STATUS.Open);
+      expect((await getInv(c, a.id)).status).to.equal(STATUS.Open);
+      expect((await getInv(c, b.id)).status).to.equal(STATUS.Open);
     });
   });
 
@@ -235,14 +263,14 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
       const { id } = await create(c);
       await c.usdc.write.mint([c.payer.account.address, USDC_AMOUNT], { account: c.issuer.account });
       await expectRevert(c.consigna.write.pay([id], { account: c.payer.account }), "ERC20InsufficientAllowance");
-      expect((await c.consigna.read.getInvoice([id])).status).to.equal(STATUS.Open);
+      expect((await getInv(c, id)).status).to.equal(STATUS.Open);
     });
 
     it("reverts when the payer is approved but has no balance, and the status stays Open", async () => {
       const { id } = await create(c);
       await c.usdc.write.approve([c.consigna.address, USDC_AMOUNT], { account: c.payer.account });
       await expectRevert(c.consigna.write.pay([id], { account: c.payer.account }), "ERC20InsufficientBalance");
-      expect((await c.consigna.read.getInvoice([id])).status).to.equal(STATUS.Open);
+      expect((await getInv(c, id)).status).to.equal(STATUS.Open);
     });
   });
 
@@ -265,16 +293,16 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
 
     it("measures the ref in bytes: 16 two-byte characters (32 bytes) pass, 17 (34 bytes) revert", async () => {
       const { id } = await create(c, "é".repeat(16));
-      expect((await c.consigna.read.getInvoice([id])).status).to.equal(STATUS.Open);
+      expect((await getInv(c, id)).status).to.equal(STATUS.Open);
       await expectRevert(create(c, "é".repeat(17)), "InvalidRef");
     });
   });
 
   describe("views", () => {
     it("isAllowedToken is true for USDC and EURC only", async () => {
-      expect(await c.consigna.read.isAllowedToken([c.usdc.address])).to.equal(true);
-      expect(await c.consigna.read.isAllowedToken([c.eurc.address])).to.equal(true);
-      expect(await c.consigna.read.isAllowedToken([c.stranger.account.address])).to.equal(false);
+      expect(await isAllowed(c, c.usdc.address)).to.equal(true);
+      expect(await isAllowed(c, c.eurc.address)).to.equal(true);
+      expect(await isAllowed(c, c.stranger.account.address)).to.equal(false);
     });
 
     it("idFor equals keccak256(abi.encode(issuer, ref))", async () => {
@@ -284,19 +312,20 @@ describe("Consigna (F1 contract, mainnet-bound, tested on Hardhat in-memory netw
           [c.issuer.account.address, REF],
         ),
       );
-      expect(await c.consigna.read.idFor([c.issuer.account.address, REF])).to.equal(expected);
+      expect(await idOf(c, c.issuer.account.address, REF)).to.equal(expected);
     });
 
     it("invoicesOf pages through an issuer's invoices in creation order", async () => {
       const refs = ["A", "B", "C"];
-      const ids = [];
+      const ids: Hex[] = [];
       for (const r of refs) ids.push((await create(c, r)).id);
 
-      expect(await c.consigna.read.invoiceCount([c.issuer.account.address])).to.equal(3n);
-      expect(await c.consigna.read.invoicesOf([c.issuer.account.address, 0n, 2n])).to.deep.equal(ids.slice(0, 2));
-      expect(await c.consigna.read.invoicesOf([c.issuer.account.address, 1n, 10n])).to.deep.equal(ids.slice(1));
-      expect(await c.consigna.read.invoicesOf([c.issuer.account.address, 3n, 5n])).to.deep.equal([]);
-      expect(await c.consigna.read.invoicesOf([c.issuer.account.address, 9n, 1n])).to.deep.equal([]);
+      const issuer = c.issuer.account.address;
+      expect(await countOf(c, issuer)).to.equal(3n);
+      expect(await pageOf(c, issuer, 0n, 2n)).to.deep.equal(ids.slice(0, 2));
+      expect(await pageOf(c, issuer, 1n, 10n)).to.deep.equal(ids.slice(1));
+      expect(await pageOf(c, issuer, 3n, 5n)).to.deep.equal([]);
+      expect(await pageOf(c, issuer, 9n, 1n)).to.deep.equal([]);
     });
   });
 });
