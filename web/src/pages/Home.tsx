@@ -54,7 +54,7 @@ export function Home() {
 
         <Reveal delay={150}>
           <div className="flex flex-col gap-4">
-            <div className="glass float p-5 sm:p-6">
+            <div className="glass glass-liquid float p-5 sm:p-6">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted)]">
                 Sample data
               </p>

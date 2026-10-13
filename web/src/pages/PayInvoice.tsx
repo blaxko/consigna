@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { encodeFunctionData, type Address, type Hex } from "viem";
-import { useAccount, useConnect, usePublicClient, useSwitchChain, useWalletClient } from "wagmi";
+import { useAccount, usePublicClient, useSwitchChain, useWalletClient } from "wagmi";
 import { Button } from "@/components/base/buttons/button";
 import { AlertTriangle, CheckCircle } from "@untitledui/icons";
 import { BlockedCard } from "../components/BlockedCard.tsx";
@@ -11,7 +11,8 @@ import { Skeleton } from "../components/Skeleton.tsx";
 import { CONSIGNA_ADDRESS, EXPLORER, USDC_ADDRESS, ARC_CHAIN_ID } from "../lib/chain.ts";
 import { consignaAbi, erc20Abi } from "../lib/abi.ts";
 import { formatUsdc, shortAddress } from "../lib/format.ts";
-import { ensureArc, hasInjectedWallet } from "../lib/arc-wallet.ts";
+import { ensureArc } from "../lib/arc-wallet.ts";
+import { useWalletPicker } from "../components/WalletPicker.tsx";
 import {
   allowanceOf,
   approveExact,
@@ -59,7 +60,6 @@ export function PayInvoice() {
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const { address, chainId, isConnected } = useAccount();
-  const { connectors, connectAsync } = useConnect();
   const { switchChainAsync } = useSwitchChain();
 
   const validId = /^0x[0-9a-fA-F]{64}$/.test(id);
@@ -175,17 +175,8 @@ export function PayInvoice() {
       <p className="text-sm text-[color:var(--color-muted)]">{COPY.noFragment}</p>
     ) : undefined;
 
-  // ---- Wallet and network (E1, E2) ----
-  async function connect() {
-    const connector = connectors[0];
-    if (!connector || !hasInjectedWallet()) return;
-    try {
-      await connectAsync({ connector });
-      await ensureArc(switchChainAsync);
-    } catch (e) {
-      if (!isUserRejection(e)) setMessage((e as Error).message?.split("\n")[0]);
-    }
-  }
+  // ---- Wallet and network (E1, E2): one shared picker, see WalletPicker.tsx ----
+  const openWalletPicker = useWalletPicker().open;
 
   // ---- Step 1: approve exactly the invoice amount (E5 handled by the allowance read) ----
   async function approve() {
@@ -379,11 +370,7 @@ export function PayInvoice() {
               <p>This sends a real transaction to show the contract refusing it. It costs about $0.01 in fees and no USDC is transferred.</p>
               <div className="flex flex-wrap gap-3">
                 {!isConnected ? (
-                  !hasInjectedWallet() ? (
-                    <span>{COPY.noWallet}</span>
-                  ) : (
-                    <Button size="md" color="primary" onClick={connect}>Connect wallet</Button>
-                  )
+                  <Button size="md" color="primary" onClick={openWalletPicker}>Connect wallet</Button>
                 ) : (
                   <Button size="md" color="primary" isLoading={dupBusy} isDisabled={!onArc} onClick={sendDuplicate}>
                     Send duplicate payment
@@ -427,11 +414,7 @@ export function PayInvoice() {
       {invoice.status === "open" && step === "view" && (
         <div className="flex flex-col gap-3">
           {!isConnected ? (
-            !hasInjectedWallet() ? (
-              <Button size="md" color="primary" isDisabled>{COPY.noWallet}</Button>
-            ) : (
-              <Button size="md" color="primary" onClick={connect}>Connect wallet</Button>
-            )
+            <Button size="md" color="primary" onClick={openWalletPicker}>Connect wallet</Button>
           ) : !onArc ? (
             <Button size="md" color="primary" onClick={() => ensureArc(switchChainAsync).catch((e) => setMessage(e.message))}>
               Switch to Arc

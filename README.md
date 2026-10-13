@@ -73,6 +73,18 @@ Scripts that touch mainnet need `.env` with `DEPLOYER_KEY` and `PAYER_KEY`. The 
 - [x] Live app on Railway
 - [ ] Demo video: TODO (90 seconds)
 
+## Wallets
+
+- **Connect wallet** opens one picker: installed browser wallets (listed by name and icon), MetaMask, and WalletConnect. On mobile, "Open in MetaMask app" opens this page inside MetaMask's browser.
+- Only the injected connector is in the entry bundle. The MetaMask SDK and WalletConnect load when the picker option is chosen.
+- WalletConnect needs a project id from cloud.reown.com, set as `VITE_WALLETCONNECT_PROJECT_ID` (see `.env.example`). Without it, the option is hidden and one console warning is logged.
+- WalletConnect sessions are not restored after a page reload, because the connector loads on demand. Reconnect from the picker.
+- The Arc network is required. If a wallet can't add Arc, the picker says so.
+
+## Dependency audit
+
+`npm audit --omit=dev` reports 0 vulnerabilities. Four transitive packages are pinned by `overrides` in `web/package.json`: `ws` 8.22.0 (high), `decode-uri-component` 0.5.0 and `postcss-selector-parser` 7.1.6 (moderate), and `uuid` 11.1.1 (moderate, under the MetaMask SDK). `npm audit fix --force` is not used, because it would install wagmi 3.x.
+
 ## Licence
 
 MIT

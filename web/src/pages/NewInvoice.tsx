@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { encodeFunctionData } from "viem";
-import { useAccount, useConnect, usePublicClient, useWalletClient } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Label } from "@/components/base/input/label";
@@ -18,7 +18,7 @@ import {
   paymentLink,
   validateRef,
 } from "../lib/invoice-logic.ts";
-import { hasInjectedWallet } from "../lib/arc-wallet.ts";
+import { useWalletPicker } from "../components/WalletPicker.tsx";
 import { invoiceIdFor } from "../lib/demo.ts";
 import { create, decodeRevert, idFor, isRefAvailable, waitForConfirmation, NotConfirmedError } from "../lib/consigna.ts";
 import { consignaAbi } from "../lib/abi.ts";
@@ -31,7 +31,7 @@ const EMPTY_LINE: Line = { desc: "", qty: "1", unit: "" };
 /** Flow A (PRD 5.2): /new. Form, then review, then Create on Arc, then the payment link. */
 export function NewInvoice() {
   const { address, isConnected } = useAccount();
-  const { connectors, connectAsync } = useConnect();
+  const openWalletPicker = useWalletPicker().open;
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
 
@@ -276,13 +276,8 @@ export function NewInvoice() {
               Create on Arc
             </Button>
           ) : (
-            <Button
-              size="md"
-              color="primary"
-              onClick={() => connectors[0] && connectAsync({ connector: connectors[0] }).catch(() => undefined)}
-              isDisabled={!connectors[0] || !hasInjectedWallet()}
-            >
-              {connectors[0] && hasInjectedWallet() ? "Connect wallet" : COPY.noWallet}
+            <Button size="md" color="primary" onClick={openWalletPicker}>
+              Connect wallet
             </Button>
           )}
           <Button size="md" color="secondary" onClick={() => setPhase("form")}>

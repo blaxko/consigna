@@ -13,6 +13,8 @@
 
 html {
   background: #ecebf5;
+  /* Anchor scrolling and the sticky header reserve their own space, so content never starts under the header. */
+  scroll-padding-top: 72px;
 }
 
 body {
@@ -76,6 +78,11 @@ body::after {
 
 .btn-secondary:hover {
   background: #fff;
+}
+
+.btn-primary:active,
+.btn-secondary:active {
+  transform: scale(0.98);
 }
 
 .btn-primary:focus-visible,
