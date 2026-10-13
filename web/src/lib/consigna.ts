@@ -9,8 +9,7 @@ import {
   type WalletClient,
 } from "viem";
 import { consignaAbi, erc20Abi } from "./abi.ts";
-import { CONSIGNA_ADDRESS, DEPLOY_BLOCK, USDC_ADDRESS } from "./chain.ts";
-import { chunkRanges } from "./ledger-logic.ts";
+import { CONSIGNA_ADDRESS, USDC_ADDRESS } from "./chain.ts";
 
 export const STATUS_NAMES = ["none", "open", "paid", "cancelled"] as const;
 export type InvoiceStatus = (typeof STATUS_NAMES)[number];
@@ -245,38 +244,6 @@ export async function paidEvent(
   const log = logs[0];
   if (!log) return undefined;
   return { txHash: log.transactionHash as Hex, payer: (log.args as { payer: Address }).payer };
-}
-
-/**
- * Creation transaction hash for each id in `ids`, for the CSV of open and cancelled rows (PRD 7.4).
- * The contract stores no creation block, so this scans InvoiceCreated from the deploy block in
- * chunks of at most 9,999 blocks, sequentially. It runs only on CSV export, never on page load.
- */
-export async function findCreationTxs(
-  client: PublicClient,
-  issuer: Address,
-  ids: Hex[],
-): Promise<Record<string, Hex>> {
-  const wanted = new Set(ids.map((i) => i.toLowerCase()));
-  const found: Record<string, Hex> = {};
-  if (wanted.size === 0) return found;
-  const latest = await client.getBlockNumber();
-  for (const [from, to] of chunkRanges(DEPLOY_BLOCK, latest)) {
-    const logs = await client.getContractEvents({
-      address: CONSIGNA_ADDRESS,
-      abi: consignaAbi,
-      eventName: "InvoiceCreated",
-      args: { issuer },
-      fromBlock: from,
-      toBlock: to,
-    });
-    for (const log of logs) {
-      const id = (log.args as { id: Hex }).id;
-      if (wanted.has(id.toLowerCase())) found[id] = log.transactionHash as Hex;
-    }
-    if (Object.keys(found).length === wanted.size) break;
-  }
-  return found;
 }
 
 /** Waits up to 30 s. On timeout it throws NotConfirmedError. The caller re-reads state, never resends. */

@@ -15,9 +15,6 @@ export const USDC_ADDRESS: Address = "0x3600000000000000000000000000000000000000
 export const EURC_ADDRESS: Address = "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1";
 export const MULTICALL3_ADDRESS: Address = "0xcA11bde05977b3631167028862bE2a173976CA11";
 
-// Consigna deploy block (deployments/arc.json). The creation-tx lookup for CSV export starts here, never earlier.
-export const DEPLOY_BLOCK = 25736521n;
-
 // Vite injects import.meta.env at build time. Node tests don't have it, so read it defensively.
 const env = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
 export const CONSIGNA_ADDRESS = (env.VITE_CONSIGNA_ADDRESS ?? "") as Address;

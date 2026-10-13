@@ -8,8 +8,6 @@ import {
   totals,
   csvRows,
   csvFilename,
-  chunkRanges,
-  MAX_BLOCK_SPAN,
 } from "./ledger-logic.ts";
 import { toCsv, CSV_HEADER } from "./csv.ts";
 import type { Invoice } from "./consigna.ts";
@@ -69,10 +67,10 @@ test("totals: paid is the sum of paid amounts, outstanding is the sum of open am
   assert.deepEqual(totals(list), { paid: 5_000_000n, outstanding: 1_500_000n });
 });
 
-test("csvRows: paid rows use the paid time and paid tx; open rows use created time and creation tx", () => {
+test("csvRows: paid rows use the paid time and payment tx; open rows use created time and an empty tx_hash", () => {
   const paid = inv({ id: ID_A, status: "paid", payer: PAYER, paidAt: 1791886904, amount: 10_000n, ref: "INV-0042" });
   const open = inv({ id: ID_B, status: "open", createdAt: 1791886000, ref: "INV-0043" });
-  const rows = csvRows([paid, open], { [ID_A]: TX_A }, { [ID_B]: TX_B });
+  const rows = csvRows([paid, open], { [ID_A]: TX_A });
   assert.equal(rows[0].date_utc, "2026-10-13T10:21:44Z");
   assert.equal(rows[0].status, "paid");
   assert.equal(rows[0].amount, "0.01");
@@ -82,29 +80,17 @@ test("csvRows: paid rows use the paid time and paid tx; open rows use created ti
   assert.equal(rows[0].explorer_url, `https://explorer.arc.io/tx/${TX_A}`);
   assert.equal(rows[1].status, "open");
   assert.equal(rows[1].payer, "");
-  assert.equal(rows[1].tx_hash, TX_B);
+  assert.equal(rows[1].tx_hash, "");
+  assert.equal(rows[1].explorer_url, "");
 });
 
 test("csvRows escapes a formula-looking ref in the full CSV text (AC5.3)", () => {
   const evil = inv({ id: ID_A, status: "open", ref: "=HYPERLINK(1)" });
-  const csv = toCsv(csvRows([evil], {}, { [ID_A]: TX_A }));
+  const csv = toCsv(csvRows([evil], {}));
   assert.match(csv, /\r\n\S+,'=HYPERLINK\(1\),open,/);
   assert.equal(csv.split("\r\n")[0], CSV_HEADER);
 });
 
 test("csvFilename follows consigna-<issuer-short>-<YYYYMMDD>.csv", () => {
   assert.equal(csvFilename(ISSUER, new Date("2026-10-13T12:00:00Z")), "consigna-0xcc136490-20261013.csv");
-});
-
-test("chunkRanges covers the block span in inclusive chunks of at most 9,999 blocks", () => {
-  assert.equal(MAX_BLOCK_SPAN, 9_999n);
-  assert.deepEqual(chunkRanges(0n, 20_000n), [
-    [0n, 9_998n],
-    [9_999n, 19_997n],
-    [19_998n, 20_000n],
-  ]);
-  for (const [a, b] of chunkRanges(100n, 50_000n)) {
-    assert.ok(b - a + 1n <= MAX_BLOCK_SPAN);
-  }
-  assert.deepEqual(chunkRanges(5n, 4n), []);
 });

@@ -315,7 +315,7 @@ Canonical form: keys in the order shown, no whitespace, amounts as decimal strin
 date_utc,ref,status,amount,token,payer,issuer,invoice_id,tx_hash,explorer_url
 2026-10-14T09:42:07Z,INV-0042,paid,5.00,USDC,0xab…,0xcd…,0x9f…,0x51…,https://<explorer>/tx/0x51…
 ```
-`date_utc` is the paid time, or the created time for open and cancelled invoices. For open and cancelled rows, `tx_hash` is the creation transaction.
+`date_utc` is the paid time, or the created time for open and cancelled invoices. `tx_hash` and `explorer_url` are filled only for paid rows (the payment transaction). For open and cancelled rows they are empty. The contract stores no creation block, so the creation transaction is not looked up at export: a deploy-block log scan on every export was rejected (CLAUDE.md §9).
 
 ### 7.5 Client module boundaries (`web/src/lib`)
 

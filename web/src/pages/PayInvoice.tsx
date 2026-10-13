@@ -3,8 +3,8 @@ import { Link, useLocation, useParams } from "react-router";
 import { encodeFunctionData, type Address, type Hex } from "viem";
 import { useAccount, useConnect, usePublicClient, useSwitchChain, useWalletClient } from "wagmi";
 import { Button } from "@/components/base/buttons/button";
-import { AlertTriangle, CheckCircle, XCircle } from "@untitledui/icons";
-import { blockedCopy } from "../lib/ledger-logic.ts";
+import { AlertTriangle, CheckCircle } from "@untitledui/icons";
+import { BlockedCard } from "../components/BlockedCard.tsx";
 import { InvoicePaper } from "../components/InvoicePaper.tsx";
 import { Stepper } from "../components/Stepper.tsx";
 import { Skeleton } from "../components/Skeleton.tsx";
@@ -374,18 +374,7 @@ export function PayInvoice() {
           )}
 
           {dupResult?.kind === "blocked" && (
-            <div role="alert" className="flex flex-col gap-3 rounded-xl border-2 border-red-600 bg-red-50 p-5 text-red-950">
-              <div className="flex items-start gap-3">
-                <XCircle className="mt-0.5 size-7 shrink-0 text-red-700" aria-hidden="true" />
-                <div className="flex flex-col gap-1">
-                  <p className="text-lg font-semibold">{blockedCopy(dupResult.payer, dupResult.paidAt)}</p>
-                  <p className="text-sm">No USDC moved. Only gas was charged.</p>
-                </div>
-              </div>
-              <a className="font-medium underline" href={txLink(dupResult.txHash)} target="_blank" rel="noreferrer">
-                View failed transaction
-              </a>
-            </div>
+            <BlockedCard payer={dupResult.payer} paidAt={dupResult.paidAt} txHash={dupResult.txHash} />
           )}
 
           {dupResult?.kind === "unexpected" && (

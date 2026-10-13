@@ -20,7 +20,6 @@ import {
 } from "../lib/ledger-logic.ts";
 import {
   cancel,
-  findCreationTxs,
   listInvoices,
   NotConfirmedError,
   paidEvent,
@@ -109,13 +108,7 @@ export function Ledger() {
     const scope = filterInvoices(rows, filter);
     setCsvBusy(true);
     try {
-      // Creation transactions for open and cancelled rows: chunked scan at export only.
-      const createdTx = await findCreationTxs(
-        publicClient,
-        issuer as Address,
-        scope.filter((i) => i.status !== "paid").map((i) => i.id),
-      );
-      const csv = toCsv(csvRows(scope, paidTx, createdTx));
+      const csv = toCsv(csvRows(scope, paidTx));
       const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
       const a = document.createElement("a");
       a.href = url;
@@ -149,9 +142,14 @@ export function Ledger() {
           </p>
         </div>
         {rows.length > 0 && (
-          <Button size="md" color="secondary" isLoading={csvBusy} onClick={downloadCsv}>
-            Download CSV
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button size="md" color="secondary" isLoading={csvBusy} onClick={downloadCsv}>
+              Download CSV
+            </Button>
+            <p className="text-xs text-[color:var(--color-muted)]">
+              Exports the {filterInvoices(rows, filter).length} invoices shown. Paid rows include their payment transaction.
+            </p>
+          </div>
         )}
       </div>
 
@@ -195,9 +193,10 @@ export function Ledger() {
 
           <div className="overflow-x-auto rounded-xl border border-[color:var(--color-line)] bg-white">
             <table className="w-full min-w-[56rem] text-sm">
+              <caption className="sr-only">Invoices issued by {shortAddress(issuer)}</caption>
               <thead className="bg-gray-50 text-left text-[color:var(--color-muted)]">
                 <tr>
-                  <th scope="col" className="px-3 py-2 font-medium">Ref</th>
+                  <th scope="col" className="sticky left-0 bg-gray-50 px-3 py-2 font-medium">Ref</th>
                   <th scope="col" className="px-3 py-2 font-medium">Created</th>
                   <th scope="col" className="px-3 py-2 font-medium">Status</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
@@ -251,7 +250,7 @@ function Row(props: {
   return (
     <>
       <tr className="border-t border-[color:var(--color-line)] align-top">
-        <td className="px-3 py-2 font-mono">
+        <td className="sticky left-0 bg-white px-3 py-2 font-mono">
           <Link to={`/i/${i.id}`} className="underline">{i.ref}</Link>
         </td>
         <td className="px-3 py-2 tabular-nums">{formatShortTime(i.createdAt)}</td>
