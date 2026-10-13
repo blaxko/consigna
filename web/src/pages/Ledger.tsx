@@ -51,15 +51,25 @@ export function Ledger() {
   const [busyId, setBusyId] = useState<Hex | undefined>();
   const [message, setMessage] = useState<string | undefined>();
   const [csvBusy, setCsvBusy] = useState(false);
+  const [loadError, setLoadError] = useState<string | undefined>();
 
   const isIssuer = Boolean(address && validIssuer && address.toLowerCase() === issuer.toLowerCase());
 
-  async function load() {
+  /** E14: when Arc cannot be reached, say so and retry with backoff (at most five times). */
+  async function load(attempt = 0) {
     if (!publicClient || !validIssuer) {
       setRows([]);
       return;
     }
-    const list = await listInvoices(publicClient, issuer as Address);
+    let list: Invoice[];
+    try {
+      list = await listInvoices(publicClient, issuer as Address);
+    } catch {
+      setLoadError(COPY.rpcDown);
+      if (attempt < 5) window.setTimeout(() => void load(attempt + 1), 3_000 * (attempt + 1));
+      return;
+    }
+    setLoadError(undefined);
     setRows(list);
     // One single-block InvoicePaid lookup per paid invoice, at its paidBlock only (CLAUDE.md §9).
     const entries = await Promise.all(
@@ -126,7 +136,12 @@ export function Ledger() {
     return <p className="text-sm">That is not a valid issuer address.</p>;
   }
   if (rows === undefined) {
-    return <Skeleton rows={4} label="Loading invoices from Arc" />;
+    return (
+      <>
+        {loadError && <p role="status" className="mb-4 text-sm font-medium text-amber-800">{loadError}</p>}
+        <Skeleton rows={4} label="Loading invoices from Arc" />
+      </>
+    );
   }
 
   const scope = filterInvoices(rows, filter);

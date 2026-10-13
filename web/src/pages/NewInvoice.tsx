@@ -18,6 +18,8 @@ import {
   paymentLink,
   validateRef,
 } from "../lib/invoice-logic.ts";
+import { hasInjectedWallet } from "../lib/arc-wallet.ts";
+import { invoiceIdFor } from "../lib/demo.ts";
 import { create, decodeRevert, idFor, isRefAvailable, waitForConfirmation, NotConfirmedError } from "../lib/consigna.ts";
 import { consignaAbi } from "../lib/abi.ts";
 
@@ -96,9 +98,14 @@ export function NewInvoice() {
   /** E11: checked before the wallet opens. */
   async function checkRefFree(): Promise<boolean> {
     if (!publicClient || !address) return true;
-    const free = await isRefAvailable(publicClient, address, ref);
-    if (!free) setErrors((e) => ({ ...e, ref: COPY.refUsed(ref) }));
-    return free;
+    try {
+      const free = await isRefAvailable(publicClient, address, ref);
+      if (!free) setErrors((e) => ({ ...e, ref: COPY.refUsed(ref) }));
+      return free;
+    } catch {
+      setErrors((e) => ({ ...e, form: COPY.rpcDown })); // E14: cannot check, so never claim the ref is free
+      return false;
+    }
   }
 
   async function onReview() {
@@ -164,6 +171,7 @@ export function NewInvoice() {
     } catch (e) {
       if (e instanceof NotConfirmedError) {
         setFailure(COPY.notConfirmed);
+        setInvoiceId(invoiceIdFor(address, ref)); // E13: a link to check the invoice; never resend
       } else {
         setFailure((e as Error).message);
       }
@@ -232,6 +240,11 @@ export function NewInvoice() {
             View transaction on the explorer
           </a>
         )}
+        {phase === "failed" && invoiceId && (
+          <Link to={`/i/${invoiceId}`} className="text-sm font-medium underline">
+            Check the invoice
+          </Link>
+        )}
         {phase === "failed" && (
           <Button size="md" color="secondary" onClick={() => setPhase("review")}>
             Back to review
@@ -267,9 +280,9 @@ export function NewInvoice() {
               size="md"
               color="primary"
               onClick={() => connectors[0] && connectAsync({ connector: connectors[0] }).catch(() => undefined)}
-              isDisabled={!connectors[0]}
+              isDisabled={!connectors[0] || !hasInjectedWallet()}
             >
-              {connectors[0] ? "Connect wallet" : COPY.noWallet}
+              {connectors[0] && hasInjectedWallet() ? "Connect wallet" : COPY.noWallet}
             </Button>
           )}
           <Button size="md" color="secondary" onClick={() => setPhase("form")}>

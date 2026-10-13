@@ -104,6 +104,8 @@ export const COPY = {
   refUsed: (ref: string) => `You've already used ${ref}. Pick a new reference.`, // E11
   decimals: "USDC supports up to 6 decimal places.", // E12
   noWallet: "Install a wallet to pay", // E1
+  addArc: "Add Arc in your wallet: chain 5042", // E2 fallback when the switch and add both fail
+  rpcDown: "Can't reach Arc right now. Retrying…", // E14
   refWarning: "Don't put personal data in the reference.", // NFR-S5
   reviewWarning: "This can't be edited after creation. You can cancel it while unpaid.", // PRD 5.2 step 3
 } as const;

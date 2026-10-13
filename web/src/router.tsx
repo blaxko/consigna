@@ -1,10 +1,11 @@
-import { createBrowserRouter, Outlet, Link } from "react-router";
+import { createBrowserRouter, Outlet } from "react-router";
 import { WalletButton } from "./components/WalletButton.tsx";
 import { SiteNav } from "./components/SiteNav.tsx";
 import { Placeholder } from "./pages/Placeholder.tsx";
 import { NewInvoice } from "./pages/NewInvoice.tsx";
 import { PayInvoice } from "./pages/PayInvoice.tsx";
 import { Ledger } from "./pages/Ledger.tsx";
+import { Home } from "./pages/Home.tsx";
 
 function Layout() {
   return (
@@ -25,20 +26,7 @@ export const router = createBrowserRouter([
     path: "/",
     element: <Layout />,
     children: [
-      {
-        index: true,
-        element: (
-          <section className="flex flex-col gap-3">
-            <h1 className="text-xl font-semibold">Consigna</h1>
-            <p className="text-sm text-[color:var(--color-muted)]">
-              One invoice, one payment, enforced by Arc mainnet.
-            </p>
-            <div className="flex gap-3 text-sm">
-              <Link to="/new" className="font-medium text-[color:var(--color-accent)] underline">Create an invoice</Link>
-            </div>
-          </section>
-        ),
-      },
+      { index: true, element: <Home /> },
       { path: "new", element: <NewInvoice /> },
       { path: "i/:id", element: <PayInvoice /> },
       { path: "ledger/:issuer", element: <Ledger /> },

@@ -11,7 +11,7 @@ import { Skeleton } from "../components/Skeleton.tsx";
 import { CONSIGNA_ADDRESS, EXPLORER, USDC_ADDRESS, ARC_CHAIN_ID } from "../lib/chain.ts";
 import { consignaAbi, erc20Abi } from "../lib/abi.ts";
 import { formatUsdc, shortAddress } from "../lib/format.ts";
-import { ensureArc } from "../lib/arc-wallet.ts";
+import { ensureArc, hasInjectedWallet } from "../lib/arc-wallet.ts";
 import {
   allowanceOf,
   approveExact,
@@ -66,6 +66,8 @@ export function PayInvoice() {
   // Follows the URL hash, so a change to #d= on the same route is picked up without a remount.
   const fragment = useMemo(() => fragmentFrom(location.hash), [location.hash]);
   const [invoice, setInvoice] = useState<Invoice | null | undefined>(undefined); // undefined = loading, null = not found
+  const [rpcDown, setRpcDown] = useState(false); // E14: shown as a status line, last known state stays on screen
+  const retries = useRef(0);
   const [paid, setPaid] = useState<PaidInfo | undefined>();
   const [balance, setBalance] = useState<bigint | undefined>();
   const [allowance, setAllowance] = useState<bigint>(0n);
@@ -88,20 +90,32 @@ export function PayInvoice() {
 
   const onArc = chainId === ARC_CHAIN_ID;
 
-  /** Re-reads the invoice from chain (NFR-R2). Balances and allowance too, when a wallet is connected. */
-  async function refresh(): Promise<Invoice | null> {
+  /**
+   * Re-reads the invoice from chain (NFR-R2). Balances and allowance too, when a wallet is connected.
+   * Returns undefined when Arc cannot be reached (E14). The page keeps its last state and retries with backoff.
+   */
+  async function refresh(): Promise<Invoice | null | undefined> {
     if (!publicClient || !validId) {
       setInvoice(null);
       return null;
     }
-    const inv = await readInvoice(publicClient, id as Hex).catch(() => undefined);
-    if (!inv || inv.status === "none") {
+    let inv: Invoice;
+    try {
+      inv = await readInvoice(publicClient, id as Hex);
+    } catch {
+      setRpcDown(true);
+      if (retries.current < 5) window.setTimeout(() => void refresh(), 3_000 * (++retries.current));
+      return undefined;
+    }
+    setRpcDown(false);
+    retries.current = 0;
+    if (inv.status === "none") {
       setInvoice(null);
       return null;
     }
     setInvoice(inv);
     if (inv.status === "paid") {
-      const ev = await paidEvent(publicClient, id as Hex, inv.paidBlock);
+      const ev = await paidEvent(publicClient, id as Hex, inv.paidBlock).catch(() => undefined);
       if (ev) setPaid(ev);
     }
     if (address && onArc) {
@@ -164,7 +178,7 @@ export function PayInvoice() {
   // ---- Wallet and network (E1, E2) ----
   async function connect() {
     const connector = connectors[0];
-    if (!connector) return;
+    if (!connector || !hasInjectedWallet()) return;
     try {
       await connectAsync({ connector });
       await ensureArc(switchChainAsync);
@@ -197,7 +211,16 @@ export function PayInvoice() {
     setMessage(undefined);
     setResult(undefined);
     const fresh = await refresh();
-    if (!fresh || fresh.status !== "open") return; // the page now shows the paid or cancelled state
+    if (!fresh) {
+      setMessage(COPY.rpcDown);
+      return;
+    }
+    // E6: someone else paid while this page was open. Show who and when, and never send.
+    if (fresh.status === "paid") {
+      setMessage(alreadyPaidCopy(fresh.payer, fresh.paidAt));
+      return;
+    }
+    if (fresh.status !== "open") return; // cancelled: the page already shows it
 
     setBusy("pay");
     let hash: Hex;
@@ -308,6 +331,11 @@ export function PayInvoice() {
 
   return (
     <section className="flex flex-col gap-6">
+      {rpcDown && (
+        <p role="status" className="text-sm font-medium text-amber-800">
+          {COPY.rpcDown}
+        </p>
+      )}
       <InvoicePaper
         ref_={invoice.ref}
         issuer={invoice.issuer}
@@ -351,7 +379,7 @@ export function PayInvoice() {
               <p>This sends a real transaction to show the contract refusing it. It costs about $0.01 in fees and no USDC is transferred.</p>
               <div className="flex flex-wrap gap-3">
                 {!isConnected ? (
-                  connectors.length === 0 ? (
+                  !hasInjectedWallet() ? (
                     <span>{COPY.noWallet}</span>
                   ) : (
                     <Button size="md" color="primary" onClick={connect}>Connect wallet</Button>
@@ -399,7 +427,7 @@ export function PayInvoice() {
       {invoice.status === "open" && step === "view" && (
         <div className="flex flex-col gap-3">
           {!isConnected ? (
-            connectors.length === 0 ? (
+            !hasInjectedWallet() ? (
               <Button size="md" color="primary" isDisabled>{COPY.noWallet}</Button>
             ) : (
               <Button size="md" color="primary" onClick={connect}>Connect wallet</Button>

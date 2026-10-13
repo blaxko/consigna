@@ -2,7 +2,7 @@ import { useAccount, useConnect, useDisconnect, useReadContract, useSwitchChain 
 import { ARC_CHAIN_ID, USDC_ADDRESS } from "../lib/chain.ts";
 import { erc20Abi } from "../lib/abi.ts";
 import { formatUsdc, shortAddress } from "../lib/format.ts";
-import { ensureArc } from "../lib/arc-wallet.ts";
+import { ensureArc, hasInjectedWallet } from "../lib/arc-wallet.ts";
 import { isUserRejection } from "../lib/invoice-logic.ts";
 
 export function WalletButton() {
@@ -23,7 +23,7 @@ export function WalletButton() {
 
   if (!isConnected) {
     const connector = connectors[0];
-    if (!connector) {
+    if (!connector || !hasInjectedWallet()) {
       return <span className="text-sm text-[color:var(--color-muted)]">Install a wallet to pay</span>;
     }
     return (
