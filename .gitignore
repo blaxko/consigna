@@ -8,3 +8,4 @@ typechain-types/
 dist/
 web/dist/
 web/.env
+*.log
