@@ -1,6 +1,8 @@
 import { createBrowserRouter, Outlet, Link } from "react-router";
 import { WalletButton } from "./components/WalletButton.tsx";
 import { Placeholder } from "./pages/Placeholder.tsx";
+import { NewInvoice } from "./pages/NewInvoice.tsx";
+import { PayInvoice } from "./pages/PayInvoice.tsx";
 
 function Layout() {
   return (
@@ -25,8 +27,8 @@ export const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { index: true, element: <Placeholder title="Home" /> },
-      { path: "new", element: <Placeholder title="Create invoice" /> },
-      { path: "i/:id", element: <Placeholder title="Invoice" /> },
+      { path: "new", element: <NewInvoice /> },
+      { path: "i/:id", element: <PayInvoice /> },
       { path: "ledger/:issuer", element: <Placeholder title="Ledger" /> },
     ],
   },

@@ -1,16 +1,6 @@
-@import "tailwindcss";
+﻿@import "./styles/globals.css";
 
+/* Accent matches the Untitled UI brand scale so links and our own buttons share one colour. */
 :root {
-  --color-ink: #111827;
-  --color-muted: #4b5563;
-  --color-surface: #ffffff;
-  --color-line: #e5e7eb;
-  --color-accent: #1d4ed8;
-}
-
-body {
-  margin: 0;
-  background: #f9fafb;
-  color: var(--color-ink);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-accent: rgb(105 65 198);
 }

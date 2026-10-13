@@ -224,6 +224,28 @@ export async function cancel(client: PublicClient, wallet: WalletClient, id: Hex
   });
 }
 
+/**
+ * The InvoicePaid log for a paid invoice, fetched from its single paidBlock. No range scan (CLAUDE.md §9).
+ * Returns undefined if the block has no matching log.
+ */
+export async function paidEvent(
+  client: PublicClient,
+  id: Hex,
+  paidBlock: bigint,
+): Promise<{ txHash: Hex; payer: Address } | undefined> {
+  const logs = await client.getContractEvents({
+    address: CONSIGNA_ADDRESS,
+    abi: consignaAbi,
+    eventName: "InvoicePaid",
+    args: { id },
+    fromBlock: paidBlock,
+    toBlock: paidBlock,
+  });
+  const log = logs[0];
+  if (!log) return undefined;
+  return { txHash: log.transactionHash as Hex, payer: (log.args as { payer: Address }).payer };
+}
+
 /** Waits up to 30 s. On timeout it throws NotConfirmedError. The caller re-reads state, never resends. */
 export async function waitForConfirmation(client: PublicClient, hash: Hex) {
   try {
