@@ -3,9 +3,11 @@ import { Link, useLocation, useParams } from "react-router";
 import { encodeFunctionData, type Address, type Hex } from "viem";
 import { useAccount, useConnect, usePublicClient, useSwitchChain, useWalletClient } from "wagmi";
 import { Button } from "@/components/base/buttons/button";
-import { AlertTriangle, CheckCircle } from "@untitledui/icons";
+import { AlertTriangle, CheckCircle, XCircle } from "@untitledui/icons";
+import { blockedCopy } from "../lib/ledger-logic.ts";
 import { InvoicePaper } from "../components/InvoicePaper.tsx";
 import { Stepper } from "../components/Stepper.tsx";
+import { Skeleton } from "../components/Skeleton.tsx";
 import { CONSIGNA_ADDRESS, EXPLORER, USDC_ADDRESS, ARC_CHAIN_ID } from "../lib/chain.ts";
 import { consignaAbi, erc20Abi } from "../lib/abi.ts";
 import { formatUsdc, shortAddress } from "../lib/format.ts";
@@ -17,6 +19,7 @@ import {
   NotConfirmedError,
   paidEvent,
   pay,
+  payUnsimulated,
   readInvoice,
   waitForConfirmation,
   type Invoice,
@@ -72,6 +75,16 @@ export function PayInvoice() {
   const [result, setResult] = useState<PayResult | undefined>();
   const [pending, setPending] = useState<Hex | undefined>();
   const sentAt = useRef<number>(0);
+  // Flow C (PRD 5.4): the deliberate duplicate. Explain first, then send unsimulated so the revert lands on-chain.
+  const [dupOpen, setDupOpen] = useState(false);
+  const [dupBusy, setDupBusy] = useState(false);
+  const [dupPending, setDupPending] = useState<Hex | undefined>();
+  const [dupResult, setDupResult] = useState<
+    | { kind: "blocked"; payer: Address; paidAt: number; txHash: Hex }
+    | { kind: "unexpected"; txHash: Hex }
+    | { kind: "unknown"; message: string; txHash?: Hex }
+    | undefined
+  >();
 
   const onArc = chainId === ARC_CHAIN_ID;
 
@@ -126,7 +139,7 @@ export function PayInvoice() {
     );
   }
   if (!invoice) {
-    return <p className="text-sm text-[color:var(--color-muted)]">Loading invoice from Arc…</p>;
+    return <Skeleton rows={2} label="Loading invoice from Arc" />;
   }
 
   const amount = invoice.amount;
@@ -241,6 +254,55 @@ export function PayInvoice() {
     }, POLL_EVERY_MS);
   }
 
+  /** Flow C: sends the duplicate without simulation, gas 120000n (in payUnsimulated). E13 applies. Never resends. */
+  async function sendDuplicate() {
+    if (!publicClient || !walletClient || !address) return;
+    setDupBusy(true);
+    setDupResult(undefined);
+    const data = encodeFunctionData({ abi: consignaAbi, functionName: "pay", args: [id as Hex] });
+    let hash: Hex;
+    try {
+      hash = await payUnsimulated(publicClient, walletClient, id as Hex);
+    } catch (e) {
+      if (!isUserRejection(e)) setDupResult({ kind: "unknown", message: (e as Error).message?.split("\n")[0] ?? "Not sent." });
+      setDupBusy(false);
+      return;
+    }
+    setDupPending(hash);
+    try {
+      const receipt = await waitForConfirmation(publicClient, hash);
+      if (receipt.status === "success") {
+        // Should never happen. A second payment settled, which the contract is meant to prevent.
+        setDupResult({ kind: "unexpected", txHash: hash });
+      } else {
+        const decoded = await decodeRevert(publicClient, {
+          from: address,
+          to: CONSIGNA_ADDRESS,
+          data,
+          blockNumber: receipt.blockNumber,
+        });
+        if (decoded.errorName === "AlreadyPaid") {
+          const [, payer, paidAt] = decoded.args as [Hex, Address, bigint];
+          setDupResult({ kind: "blocked", payer, paidAt: Number(paidAt), txHash: hash });
+        } else {
+          // Decoding failed: build the card from the chain state instead (PRD 5.4 fallback).
+          const fresh = await readInvoice(publicClient, id as Hex);
+          setDupResult({ kind: "blocked", payer: fresh.payer, paidAt: fresh.paidAt, txHash: hash });
+        }
+      }
+    } catch (e) {
+      if (e instanceof NotConfirmedError) {
+        setDupResult({ kind: "unknown", message: COPY.notConfirmed, txHash: hash });
+        pollAfterTimeout();
+      } else {
+        setDupResult({ kind: "unknown", message: (e as Error).message?.split("\n")[0] ?? "Unknown error", txHash: hash });
+      }
+    } finally {
+      setDupBusy(false);
+      setDupPending(undefined);
+    }
+  }
+
   // ---- Paid or cancelled (PRD 5.3 step 6, E7) ----
   const txLink = (h: Hex) => `${EXPLORER}/tx/${h}`;
 
@@ -273,6 +335,77 @@ export function PayInvoice() {
       )}
 
       {invoice.status === "cancelled" && <p className="text-sm">{COPY.cancelled}</p>}
+
+      {invoice.status === "paid" && (
+        <div className="flex flex-col gap-4">
+          {!dupOpen && !dupResult && (
+            <div>
+              <Button size="md" color="secondary" onClick={() => setDupOpen(true)}>
+                Try paying again
+              </Button>
+            </div>
+          )}
+
+          {dupOpen && !dupResult && (
+            <div className="flex flex-col gap-3 rounded-xl border border-[color:var(--color-line)] bg-white p-5 text-sm">
+              <p>This sends a real transaction to show the contract refusing it. It costs about $0.01 in fees and no USDC is transferred.</p>
+              <div className="flex flex-wrap gap-3">
+                {!isConnected ? (
+                  connectors.length === 0 ? (
+                    <span>{COPY.noWallet}</span>
+                  ) : (
+                    <Button size="md" color="primary" onClick={connect}>Connect wallet</Button>
+                  )
+                ) : (
+                  <Button size="md" color="primary" isLoading={dupBusy} isDisabled={!onArc} onClick={sendDuplicate}>
+                    Send duplicate payment
+                  </Button>
+                )}
+                <Button size="md" color="secondary" isDisabled={dupBusy} onClick={() => setDupOpen(false)}>
+                  Cancel
+                </Button>
+              </div>
+              {dupPending && (
+                <a className="underline" href={txLink(dupPending)} target="_blank" rel="noreferrer">
+                  View transaction on the explorer
+                </a>
+              )}
+            </div>
+          )}
+
+          {dupResult?.kind === "blocked" && (
+            <div role="alert" className="flex flex-col gap-3 rounded-xl border-2 border-red-600 bg-red-50 p-5 text-red-950">
+              <div className="flex items-start gap-3">
+                <XCircle className="mt-0.5 size-7 shrink-0 text-red-700" aria-hidden="true" />
+                <div className="flex flex-col gap-1">
+                  <p className="text-lg font-semibold">{blockedCopy(dupResult.payer, dupResult.paidAt)}</p>
+                  <p className="text-sm">No USDC moved. Only gas was charged.</p>
+                </div>
+              </div>
+              <a className="font-medium underline" href={txLink(dupResult.txHash)} target="_blank" rel="noreferrer">
+                View failed transaction
+              </a>
+            </div>
+          )}
+
+          {dupResult?.kind === "unexpected" && (
+            <p role="alert" className="text-sm font-medium text-red-700">
+              The contract accepted a second payment. Check the transaction on the explorer and report it.
+            </p>
+          )}
+
+          {dupResult?.kind === "unknown" && (
+            <div role="alert" className="flex flex-col gap-2 text-sm">
+              <p className="font-medium">{dupResult.message}</p>
+              {dupResult.txHash && (
+                <a className="underline" href={txLink(dupResult.txHash)} target="_blank" rel="noreferrer">
+                  View on explorer
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {invoice.status === "open" && step === "view" && (
         <div className="flex flex-col gap-3">
