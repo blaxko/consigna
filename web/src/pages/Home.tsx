@@ -1,66 +1,130 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { CONSIGNA_ADDRESS, EXPLORER } from "../lib/chain.ts";
-import { shortAddress } from "../lib/format.ts";
-import { BLOCKED_DUPLICATE_TX, DEMO_ISSUER, DEMO_PAID_REF, invoiceIdFor } from "../lib/demo.ts";
+import { BlockedCard } from "../components/BlockedCard.tsx";
+import { InvoicePaper } from "../components/InvoicePaper.tsx";
+import { CountUp, Reveal } from "../components/motion.tsx";
+import { BLOCKED_DUPLICATE_TX, DEMO_ISSUER } from "../lib/demo.ts";
 
-/** Home: the offer, one primary action, three demo links, and the live contract line. */
+// Static sample data for the hero only. It is labelled "Sample data" on screen and is never sent anywhere.
+const SAMPLE_PAYER = "0x9f3c1a7b2d4e6f8a0b1c2d3e4f5a6b7c8d9e0f12";
+const SAMPLE_PAID_AT = Math.floor(Date.UTC(2026, 9, 13, 10, 42, 7) / 1000);
+
+const POINTS = [
+  {
+    n: "01",
+    title: "The contract never holds funds",
+    body: "USDC moves from the payer straight to the issuer. There is no escrow, no pool and no refund path to get wrong.",
+  },
+  {
+    n: "02",
+    title: "No admin keys",
+    body: "The contract has no owner, no pause and no upgrade. What it does today is what it does on every later day.",
+  },
+  {
+    n: "03",
+    title: "Books from chain reads",
+    body: "The ledger and CSV are rebuilt from the chain itself. Nothing lives off-chain, so there is nothing to reconcile.",
+  },
+];
+
+/** Landing: hero with real components, stats strip, three short points, closing CTA. */
 export function Home() {
-  const paidInvoicePath = `/i/${invoiceIdFor(DEMO_ISSUER, DEMO_PAID_REF)}`;
   return (
-    <section className="flex flex-col gap-10 py-8 sm:py-16">
-      <div className="flex flex-col gap-5">
-        <h1 className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-          One invoice. One payment. Enforced by Arc.
-        </h1>
-        <p className="max-w-xl text-base text-[color:var(--color-muted)] sm:text-lg">
-          Stablecoin duplicates settle before anyone notices, and matching payments to invoices is still manual work.
-        </p>
-      </div>
+    <div className="flex flex-col gap-24 pb-8 sm:gap-32">
+      <section className="grid items-center gap-12 pt-10 sm:pt-16 lg:grid-cols-2 lg:gap-16">
+        <Reveal>
+          <div className="flex flex-col gap-6">
+            <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
+              One invoice. One payment.
+              <span className="block text-[color:var(--color-accent)]">Enforced by Arc.</span>
+            </h1>
+            <p className="max-w-lg text-lg leading-relaxed text-[color:var(--color-muted)]">
+              Duplicate USDC payments settle before anyone notices. Consigna stops the second one in the contract.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/new" className="btn-primary">
+                Launch app
+              </Link>
+              <Link to="/how-it-works" className="btn-secondary">
+                How it works
+              </Link>
+            </div>
+          </div>
+        </Reveal>
 
-      <div className="flex flex-col gap-6">
-        <Link
-          to="/new"
-          className="inline-flex w-fit items-center rounded-md bg-[color:var(--color-accent)] px-5 py-3 text-base font-semibold text-white transition duration-100 ease-linear hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          Create invoice
-        </Link>
+        <Reveal delay={150}>
+          <div className="flex flex-col gap-4">
+            <div className="glass float p-5 sm:p-6">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted)]">
+                Sample data
+              </p>
+              <InvoicePaper
+                ref_="INV-0042"
+                issuer={DEMO_ISSUER}
+                status="paid"
+                amountUnits={500_000n}
+                lines={[{ desc: "Design retainer", qty: 1, unit: "0.50" }]}
+              />
+            </div>
+            <div className="ml-auto w-[94%]">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted)]">
+                Sample data
+              </p>
+              <BlockedCard payer={SAMPLE_PAYER} paidAt={SAMPLE_PAID_AT} txHash={BLOCKED_DUPLICATE_TX} scroll={false} />
+            </div>
+          </div>
+        </Reveal>
+      </section>
 
-        <ul className="flex flex-col gap-3 text-base">
-          <li>
-            <Link to={paidInvoicePath} className="font-medium underline underline-offset-4">
-              See a paid invoice
+      <Reveal>
+        <section aria-label="Key numbers" className="glass grid grid-cols-2 gap-8 p-6 sm:p-10 md:grid-cols-4">
+          <Stat value={<CountUp to={1} />} caption="payment per invoice" />
+          <Stat value={<span>&lt;1s</span>} caption="finality on Arc" />
+          <Stat value={<CountUp to={0.01} decimals={2} prefix="~$" />} caption="per transaction" />
+          <Stat value={<CountUp to={0} />} caption="admin keys" />
+        </section>
+      </Reveal>
+
+      <section className="flex flex-col gap-10">
+        <Reveal>
+          <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Built so the rules hold.</h2>
+        </Reveal>
+        <div className="grid gap-5 md:grid-cols-3">
+          {POINTS.map((p, i) => (
+            <Reveal key={p.n} delay={i * 120}>
+              <article className="glass flex h-full flex-col gap-4 p-6">
+                <span className="font-mono text-sm font-semibold text-[color:var(--color-accent)]">{p.n}</span>
+                <h3 className="font-display text-xl font-bold leading-snug">{p.title}</h3>
+                <p className="text-[color:var(--color-muted)]">{p.body}</p>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <Reveal>
+        <section className="glass flex flex-col items-center gap-6 px-6 py-14 text-center">
+          <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Put your next invoice on Arc.</h2>
+          <p className="max-w-md text-[color:var(--color-muted)]">Create the invoice, send the link, and it can be paid once.</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link to="/new" className="btn-primary">
+              Launch app
             </Link>
-          </li>
-          <li>
-            <a
-              href={`${EXPLORER}/tx/${BLOCKED_DUPLICATE_TX}`}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              See a blocked duplicate on the explorer
-            </a>
-          </li>
-          <li>
-            <Link to={`/ledger/${DEMO_ISSUER}`} className="font-medium underline underline-offset-4">
-              View ledger
+            <Link to="/proof" className="btn-secondary">
+              See the proof
             </Link>
-          </li>
-        </ul>
-      </div>
+          </div>
+        </section>
+      </Reveal>
+    </div>
+  );
+}
 
-      <p className="border-t border-[color:var(--color-line)] pt-5 text-sm text-[color:var(--color-muted)]">
-        Live on Arc mainnet · Contract{" "}
-        <a
-          href={`${EXPLORER}/address/${CONSIGNA_ADDRESS}`}
-          target="_blank"
-          rel="noreferrer"
-          className="font-mono underline underline-offset-4"
-          title={CONSIGNA_ADDRESS}
-        >
-          {CONSIGNA_ADDRESS ? shortAddress(CONSIGNA_ADDRESS) : "not configured"}
-        </a>
-      </p>
-    </section>
+function Stat({ value, caption }: { value: ReactNode; caption: string }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="font-display text-4xl font-bold tracking-tight sm:text-5xl">{value}</p>
+      <p className="text-sm text-[color:var(--color-muted)]">{caption}</p>
+    </div>
   );
 }

@@ -16,6 +16,8 @@
   "type": "module",
   "private": "true",
   "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "5.3.0",
+    "@fontsource/geist-mono": "5.3.0",
     "@tailwindcss/typography": "0.5.20",
     "@tanstack/react-query": "5.104.2",
     "@untitledui/icons": "0.0.23",

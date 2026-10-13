@@ -8,4 +8,8 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
+  build: {
+    // Font subsets stay as separate files. Inlined base64 would make every page download all of them in the CSS.
+    assetsInlineLimit: 0,
+  },
 });

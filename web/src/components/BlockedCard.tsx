@@ -8,11 +8,22 @@ import { blockedCopy } from "../lib/ledger-logic.ts";
  * Flow C result (PRD 5.4 step 3): the duplicate was refused by the contract. Error banners are not dismissable.
  * It scrolls into view when it appears, so it cannot be missed in a recording.
  */
-export function BlockedCard({ payer, paidAt, txHash }: { payer: Address; paidAt: number; txHash: Hex }) {
+export function BlockedCard({
+  payer,
+  paidAt,
+  txHash,
+  scroll = true,
+}: {
+  payer: Address;
+  paidAt: number;
+  txHash: Hex;
+  /** Off for the static sample on the landing page, so the hero never scrolls the page. */
+  scroll?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, []);
+    if (scroll) ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [scroll]);
   return (
     <div
       ref={ref}

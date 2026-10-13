@@ -194,7 +194,7 @@ export function NewInvoice() {
           <CheckCircle className="size-5 text-[color:var(--color-accent)]" aria-hidden="true" />
           <h1 className="text-xl font-semibold">Invoice created on Arc</h1>
         </div>
-        <div className="rounded-xl border border-[color:var(--color-line)] bg-white p-5">
+        <div className="glass p-5">
           <p className="text-sm text-[color:var(--color-muted)]">Payment link</p>
           <p className="mt-1 break-all font-mono text-sm">{link}</p>
           <div className="mt-4 flex items-center gap-3">
@@ -301,7 +301,7 @@ export function NewInvoice() {
         <p className="mt-1 text-sm text-[color:var(--color-muted)]">Amounts are in USDC on Arc mainnet.</p>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl border border-[color:var(--color-line)] bg-white p-6">
+      <div className="flex flex-col gap-4 glass p-6">
         <Input
           label="Reference"
           placeholder="INV-0042"

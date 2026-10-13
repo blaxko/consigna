@@ -60,11 +60,17 @@ npm run coverage    # branch coverage for Consigna.sol (must be 100%)
 
 Scripts that touch mainnet need `.env` with `DEPLOYER_KEY` and `PAYER_KEY`. The file is git-ignored and never committed.
 
+## Live app
+
+- **App:** https://consigna-production.up.railway.app
+- Landing page `/`, plus `/how-it-works`, `/why-arc` and `/proof` (links to the mainnet records above).
+- The paid demo invoice `TEST-001` and its ledger are linked from `/proof`.
+
 ## Status
 
 - [x] Contract deployed on Arc mainnet and verified by bytecode
 - [x] Mainnet smoke test passed
-- [ ] Live app: TODO (Railway URL)
+- [x] Live app on Railway
 - [ ] Demo video: TODO (90 seconds)
 
 ## Licence

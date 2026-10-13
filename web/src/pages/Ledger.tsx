@@ -169,7 +169,7 @@ export function Ledger() {
       </div>
 
       {rows.length === 0 ? (
-        <div className="flex flex-col gap-3 rounded-xl border border-[color:var(--color-line)] bg-white p-6">
+        <div className="flex flex-col gap-3 glass p-6">
           <p className="text-sm">No invoices yet.</p>
           <div>
             <Link to="/new">
@@ -179,7 +179,7 @@ export function Ledger() {
         </div>
       ) : (
         <>
-          <dl className="grid grid-cols-2 gap-4 rounded-xl border border-[color:var(--color-line)] bg-white p-5 text-sm sm:max-w-md">
+          <dl className="grid grid-cols-2 gap-4 glass p-5 text-sm sm:max-w-md">
             <div>
               <dt className="text-[color:var(--color-muted)]">Paid</dt>
               <dd className="text-lg font-semibold tabular-nums">{formatUsdc(sums.paid)} USDC</dd>

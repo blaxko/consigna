@@ -21,7 +21,7 @@ export function InvoicePaper(props: {
   banner?: ReactNode;
 }) {
   return (
-    <article className="rounded-xl border border-[color:var(--color-line)] bg-white p-6 shadow-sm">
+    <article className="rounded-xl border border-[color:var(--color-line)] glass p-6 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <h2 className="font-mono text-lg font-semibold">{props.ref_}</h2>
         {props.status && <StatusBadge status={props.status} />}
