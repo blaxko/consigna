@@ -1,0 +1,37 @@
+{
+    "name":  "consigna",
+    "version":  "1.0.0",
+    "description":  "Duplicate-proof USDC invoice payments on Arc mainnet",
+    "directories":  {
+                        "doc":  "docs"
+                    },
+    "scripts":  {
+                    "compile":  "hardhat compile",
+                    "test":  "hardhat test",
+                    "coverage":  "set SOLIDITY_COVERAGE=true\u0026\u0026 hardhat coverage"
+                },
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/blaxko/consigna.git"
+                   },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "MIT",
+    "type":  "commonjs",
+    "bugs":  {
+                 "url":  "https://github.com/blaxko/consigna/issues"
+             },
+    "homepage":  "https://github.com/blaxko/consigna#readme",
+    "devDependencies":  {
+                            "@nomicfoundation/hardhat-toolbox-viem":  "3.0.0",
+                            "dotenv":  "16.6.1",
+                            "hardhat":  "2.26.5",
+                            "tsx":  "4.23.15",
+                            "typescript":  "5.9.3"
+                        },
+    "dependencies":  {
+                         "@openzeppelin/contracts":  "5.6.1"
+                     }
+}
