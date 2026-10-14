@@ -1,14 +1,15 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
-import { useAccount, useConnect, useConnectors, useDisconnect, useReadContract, useSwitchChain, type Connector } from "wagmi";
-import type { CreateConnectorFn } from "wagmi";
+import { Wallet01 } from "@untitledui/icons";
+import { useAccount, useConnect, useConnectors, useDisconnect, useReadContract, useSwitchChain, type Connector, type CreateConnectorFn } from "wagmi";
+import { getAccount, reconnect } from "wagmi/actions";
 import { Button } from "@/components/base/buttons/button";
 import { ARC_CHAIN_ID, USDC_ADDRESS } from "../lib/chain.ts";
 import { erc20Abi } from "../lib/abi.ts";
 import { formatUsdc, shortAddress } from "../lib/format.ts";
 import { ensureArc, hasInjectedWallet } from "../lib/arc-wallet.ts";
 import { COPY, isUserRejection } from "../lib/invoice-logic.ts";
-import { WALLETCONNECT_PROJECT_ID } from "../lib/wagmi.ts";
+import { WALLETCONNECT_PROJECT_ID, wagmiConfig } from "../lib/wagmi.ts";
 
 type Ctx = { open: () => void };
 const WalletPickerContext = createContext<Ctx>({ open: () => undefined });
@@ -21,6 +22,12 @@ type ConnectArg = Connector | CreateConnectorFn;
 const WC_NO_ARC = "This wallet doesn't support Arc yet. Try MetaMask, or open this page in MetaMask's browser.";
 const CONNECT_FAILED = "Couldn't connect to that wallet. Try again, or pick another.";
 
+// Connector ids of the lazy connectors (see wallet-connectors.ts). Wagmi persists the id under "recentConnectorId".
+const LAZY_ID_TO_KIND: Record<string, "metamask" | "walletconnect"> = {
+  metaMaskSDK: "metamask",
+  walletConnect: "walletconnect",
+};
+
 export function WalletPickerProvider({ children }: { children: ReactNode }) {
   const [isOpen, setOpen] = useState(false);
   // Fetch the connector chunk once the page is idle, so a tap on "Connect wallet" does not wait for the download.
@@ -30,6 +37,11 @@ export function WalletPickerProvider({ children }: { children: ReactNode }) {
     return () => {
       if (typeof id === "number" && window.cancelIdleCallback) window.cancelIdleCallback(id);
     };
+  }, []);
+  // After first paint, restore a MetaMask SDK or WalletConnect session. Those connectors are not in the config, so wagmi's own reconnect skips them.
+  useEffect(() => {
+    const timer = window.setTimeout(() => void reconnectLazy(), 0);
+    return () => window.clearTimeout(timer);
   }, []);
   return (
     <WalletPickerContext.Provider value={{ open: () => setOpen(true) }}>
@@ -44,6 +56,29 @@ let connectorsChunk: Promise<typeof import("../lib/wallet-connectors.ts")> | und
 export function prefetchWalletConnectors() {
   connectorsChunk ??= import("../lib/wallet-connectors.ts");
   return connectorsChunk;
+}
+
+async function reconnectLazy() {
+  let recent: unknown;
+  try {
+    recent = await wagmiConfig.storage?.getItem("recentConnectorId");
+  } catch {
+    return;
+  }
+  const kind = typeof recent === "string" ? LAZY_ID_TO_KIND[recent] : undefined;
+  if (!kind || getAccount(wagmiConfig).isConnected) return;
+  if (kind === "walletconnect" && !WALLETCONNECT_PROJECT_ID) return;
+  try {
+    const mod = await prefetchWalletConnectors();
+    // wagmi's own on-load reconnect guards against overlap and returns at once while it runs. Wait for it to finish first.
+    for (let i = 0; i < 50 && ["reconnecting", "connecting"].includes(wagmiConfig.state.status); i++) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    const connector = kind === "metamask" ? mod.metaMaskConnector() : mod.walletConnectConnector();
+    await reconnect(wagmiConfig, { connectors: [connector] });
+  } catch {
+    // Silent. The user can connect again from the picker.
+  }
 }
 
 const isMobile = () => typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -72,6 +107,7 @@ function WalletPicker({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange:
   // Injected wallets discovered via EIP-6963, listed by their own name and icon. Fall back to window.ethereum if none are discovered.
   const discovered = connectors.filter((c) => c.type === "injected" && c.id !== "injected");
   const browserFallback = discovered.length === 0 && hasInjectedWallet() ? connectors.filter((c) => c.id === "injected") : [];
+  const injectedRows = [...discovered, ...browserFallback];
   const hasInjectedMetaMask = discovered.some((c) => c.id === "io.metamask");
 
   function close() {
@@ -79,44 +115,53 @@ function WalletPicker({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange:
     onOpenChange(false);
   }
 
-  /** `connector` is a connector instance or a factory. Wagmi sets up a factory on first use. */
+  /**
+   * `connector` is a connector instance or a factory. Wagmi sets up a factory on first use.
+   * Connected state is shown at once: the picker closes as soon as wagmi reports the connection.
+   * The Arc switch runs after that. If it fails, the picker reopens on the connected view with the error.
+   */
   async function connectWith(connector: ConnectArg, label: string) {
     setError(undefined);
     setBusy(label);
-    let connected = false;
-    let result: { chainId: number } | undefined;
+    let result: { chainId: number };
     try {
       result = await connectAsync({ connector });
-      connected = true;
-      if (result.chainId !== ARC_CHAIN_ID) await ensureArc(switchChainAsync);
-      close();
     } catch (e) {
-      if (isUserRejection(e)) return;
-      if (!connected) setError(CONNECT_FAILED);
-      else setError(label === "WalletConnect" ? WC_NO_ARC : COPY.addArc);
-    } finally {
+      if (!isUserRejection(e)) setError(CONNECT_FAILED);
       setBusy(undefined);
+      return;
+    }
+    setBusy(undefined);
+    close();
+    if (result.chainId === ARC_CHAIN_ID) return;
+    try {
+      await ensureArc(switchChainAsync);
+    } catch {
+      onOpenChange(true);
+      setError(label === "WalletConnect" ? WC_NO_ARC : COPY.addArc);
     }
   }
 
   // MetaMask SDK and WalletConnect are imported only when the user picks them, so they stay out of the entry bundle.
   async function connectLazy(kind: "metamask" | "walletconnect") {
+    const label = kind === "metamask" ? "MetaMask" : "WalletConnect";
     setError(undefined);
-    setBusy(kind === "metamask" ? "MetaMask" : "WalletConnect");
+    setBusy(label);
+    let connector: CreateConnectorFn;
     try {
       const mod = await prefetchWalletConnectors();
-      const connector = kind === "metamask" ? mod.metaMaskSdk() : mod.walletConnectSdk();
-      setBusy(undefined);
-      await connectWith(connector, kind === "metamask" ? "MetaMask" : "WalletConnect");
+      connector = kind === "metamask" ? mod.metaMaskConnector() : mod.walletConnectConnector();
     } catch {
       setBusy(undefined);
       setError(CONNECT_FAILED);
+      return;
     }
+    await connectWith(connector, label);
   }
 
   // Inside a wallet's in-app browser (an injected provider on mobile), connect straight away. No picker.
   useEffect(() => {
-    const first = [...discovered, ...browserFallback][0];
+    const first = injectedRows[0];
     if (isOpen && !isConnected && isMobile() && first) void connectWith(first, first.name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -183,34 +228,29 @@ function WalletPicker({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange:
               <p className="text-sm text-[color:var(--color-muted)]">Use Arc mainnet (chain 5042). Pick a wallet.</p>
 
               <ul className="flex flex-col gap-2">
-                {[...discovered, ...browserFallback].map((c) => (
+                {injectedRows.map((c) => (
                   <WalletRow
                     key={c.uid}
                     name={c.name}
-                    icon={c.icon}
+                    logo={c.icon}
                     busy={busy === c.name}
                     disabled={busy !== undefined}
                     onClick={() => connectWith(c, c.name)}
                   />
                 ))}
-                {isMobile() && (
-                  <li>
-                    <a
-                      href={metaMaskAppLink()}
-                      className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-[color:var(--color-accent)] bg-[rgb(96_72_170/0.06)] px-4 py-3 font-medium"
-                    >
-                      <span aria-hidden="true" className="flex size-7 items-center justify-center rounded-md bg-[color:var(--color-accent)] text-xs font-bold text-white">M</span>
-                      <span className="flex-1">Open in MetaMask app</span>
-                      <span className="text-xs text-[color:var(--color-muted)]">Recommended</span>
-                    </a>
-                  </li>
-                )}
-                {!isMobile() && !hasInjectedMetaMask && (
-                  <WalletRow name="MetaMask" busy={busy === "MetaMask"} disabled={busy !== undefined} onClick={() => connectLazy("metamask")} />
+                {!hasInjectedMetaMask && (
+                  <WalletRow
+                    name="MetaMask"
+                    logo="/wallets/metamask.svg"
+                    busy={busy === "MetaMask"}
+                    disabled={busy !== undefined}
+                    onClick={() => connectLazy("metamask")}
+                  />
                 )}
                 {WALLETCONNECT_PROJECT_ID && (
                   <WalletRow
                     name="WalletConnect"
+                    logo="/wallets/walletconnect.svg"
                     detail={isMobile() ? "Wallet apps" : "QR code"}
                     busy={busy === "WalletConnect"}
                     disabled={busy !== undefined}
@@ -219,8 +259,21 @@ function WalletPicker({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange:
                 )}
               </ul>
 
-
+              {isMobile() && (
+                <p className="text-sm text-[color:var(--color-muted)]">
+                  After approving in MetaMask, return to this tab if it doesn't switch back automatically.
+                </p>
+              )}
               {error && <p role="alert" className="text-sm font-medium text-red-700">{error}</p>}
+              {isMobile() && (
+                <a
+                  href={metaMaskAppLink()}
+                  aria-label="Prefer MetaMask's built-in browser? Opens this page in the MetaMask app's browser."
+                  className="self-start text-sm text-[color:var(--color-muted)] underline underline-offset-2"
+                >
+                  Prefer MetaMask's built-in browser?
+                </a>
+              )}
             </>
           )}
         </Dialog>
@@ -231,14 +284,14 @@ function WalletPicker({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange:
 
 function WalletRow({
   name,
-  icon,
+  logo,
   detail,
   busy,
   disabled,
   onClick,
 }: {
   name: string;
-  icon?: string;
+  logo?: string;
   detail?: string;
   busy: boolean;
   disabled: boolean;
@@ -252,12 +305,10 @@ function WalletRow({
         disabled={disabled}
         className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-[color:var(--color-line)] px-4 py-3 text-left font-medium transition duration-100 ease-linear hover:bg-[rgb(105_65_198/0.06)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {icon ? (
-          <img src={icon} alt="" width={28} height={28} className="size-7 rounded-md" />
+        {logo ? (
+          <img src={logo} alt="" width={28} height={28} className="size-7 shrink-0 rounded-md" />
         ) : (
-          <span aria-hidden="true" className="flex size-7 items-center justify-center rounded-md bg-[color:var(--color-accent)] text-xs font-bold text-white">
-            {name.slice(0, 1)}
-          </span>
+          <Wallet01 aria-hidden="true" size={28} className="size-7 shrink-0 text-[color:var(--color-muted)]" />
         )}
         <span className="flex-1">{name}</span>
         <span className="text-xs text-[color:var(--color-muted)]">{busy ? "Connecting…" : detail}</span>

@@ -41,7 +41,7 @@ export function HeroDemo() {
 
   return (
     <div
-      className="relative flex flex-col gap-4 rounded-[1.25rem] border border-[color:var(--color-line)] bg-white p-5 shadow-[0_24px_48px_-28px_rgb(17_20_24/0.18)] sm:p-6"
+      className="relative flex flex-col gap-4 rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-6 shadow-[var(--shadow-card)]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}

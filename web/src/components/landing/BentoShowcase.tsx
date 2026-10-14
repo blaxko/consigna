@@ -45,7 +45,7 @@ export function BentoShowcase() {
               </div>
             ))}
           </div>
-          <p className="mt-4 font-mono text-sm font-semibold">paid in 0.6s</p>
+          <p className="mt-4 font-mono text-sm font-semibold">Paid in 0.6s</p>
         </Card>
       </Reveal>
 
@@ -65,13 +65,13 @@ export function BentoShowcase() {
               </div>
             ))}
           </div>
-          <p className="mt-2 text-xs text-[color:var(--color-muted)]">Sample rows</p>
+          <p className="mt-3 text-xs text-[color:var(--color-muted)]">Sample rows</p>
         </Card>
       </Reveal>
 
       <Reveal className="md:col-span-2">
         <Card title="No admin keys" line="No owner, no pause, no proxy. The contract never holds funds.">
-          <div className="flex items-start gap-4 rounded-xl bg-[#14122b] p-4 text-white">
+          <div className="flex items-start gap-4 rounded-xl bg-[color:var(--color-navy)] p-4 text-white">
             <Lock01 className="mt-0.5 size-5 shrink-0 text-white/80" aria-hidden="true" />
             <div className="flex flex-col gap-1 font-mono text-xs leading-relaxed">
               <p>pay(bytes32 id)</p>
@@ -114,7 +114,7 @@ const SAMPLE_ROWS = [
 
 function Card({ title, line, children }: { title: string; line: string; children: ReactNode }) {
   return (
-    <BentoCard as="article" className="h-full gap-5">
+    <BentoCard as="article" className="h-full gap-6">
       <div className="flex flex-1 flex-col justify-center">{children}</div>
       <div className="flex flex-col gap-1.5">
         <h3 className="text-base font-semibold">{title}</h3>

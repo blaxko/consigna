@@ -20,10 +20,10 @@ export function SectionHead({ label, title, sub }: { label: string; title: strin
   );
 }
 
-/** Sub-page header: pill label, page heading (h1) and a one-line grey subheading. Centred, like SectionHead. */
+/** Sub-page header: pill label, page heading (h1) and a one-line grey subheading. Left-aligned, so sub-pages read differently from the centred landing sections. */
 export function PageHead({ label, title, sub }: { label: string; title: string; sub?: string }) {
   return (
-    <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
+    <div className="flex max-w-2xl flex-col items-start gap-4 text-left">
       <PillLabel>{label}</PillLabel>
       <h1 className="text-4xl font-medium leading-[1.12] tracking-[-0.015em] sm:text-5xl">{title}</h1>
       {sub && <p className="text-base text-[color:var(--color-muted)] sm:text-lg">{sub}</p>}
@@ -31,7 +31,7 @@ export function PageHead({ label, title, sub }: { label: string; title: string; 
   );
 }
 
-/** Bento card: white, rounded, soft large shadow. `span` sets the grid footprint. */
+/** Bento card: solid white, 1rem radius, one soft shadow. `className` sets the grid footprint. */
 export function BentoCard({
   children,
   className = "",
@@ -42,7 +42,7 @@ export function BentoCard({
   as?: "div" | "article" | "section";
 }) {
   return (
-    <Tag className={`relative flex min-w-0 flex-col overflow-hidden rounded-[1.25rem] border border-[color:var(--color-line)] bg-white/90 p-6 shadow-[0_24px_48px_-28px_rgb(17_20_24/0.16)] backdrop-blur-[12px] ${className}`}>
+    <Tag className={`relative flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-6 shadow-[var(--shadow-card)] ${className}`}>
       {children}
     </Tag>
   );

@@ -11,7 +11,21 @@
   --color-ink: #111418;
   --color-muted: #5b6170;
   --color-line: rgb(17 20 24 / 0.09);
+  /* Closing band. Muted text on it is --color-navy-muted (11:1). */
+  --color-navy: #111b33;
+  --color-navy-muted: rgb(200 208 224);
+  /* Soft blue panel behind the dashboard preview. Accent text on it is 4.7:1. */
+  --color-panel: rgb(232 240 255);
+  /* Radius family: cards 1rem, inner tiles 0.75rem, inputs and chips 0.5rem. */
+  --radius-card: 1rem;
+  /* The one card shadow. Buttons take only a 1px subtle shadow. */
+  --shadow-card: 0 24px 48px -28px rgb(17 20 24 / 0.16);
   color-scheme: light;
+}
+
+::selection {
+  background: rgb(45 100 214 / 0.18);
+  color: var(--color-ink);
 }
 
 html {
@@ -73,6 +87,34 @@ body::after {
 
 .btn-secondary:hover {
   background: #fff;
+}
+
+/* White button for the navy closing band. */
+.btn-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.7rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: #fff;
+  color: var(--color-navy);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  transition: transform 200ms ease-out, background-color 200ms ease-out;
+}
+
+.btn-light:hover {
+  background: rgb(255 255 255 / 0.9);
+}
+
+.btn-light:active {
+  transform: scale(0.98);
+}
+
+.btn-light:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 
 .btn-primary:active,

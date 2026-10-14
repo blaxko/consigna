@@ -1,35 +1,34 @@
-# Design system: liquid glass
+# Design system: calm, frosted, one blue
 
-**Source of truth:** `src/index.css` (tokens and glass), `src/styles/motion.css` (motion), `src/styles/theme.css` (fonts and Tailwind theme).
+**Source of truth:** `src/index.css` (tokens, buttons), `src/styles/glass.css` (frosted cards), `src/styles/motion.css` (motion), `src/styles/theme.css` (fonts and the Tailwind theme).
 
 ## Type
-
-- Display and body: **Plus Jakarta Sans Variable** (self-hosted via `@fontsource-variable/plus-jakarta-sans`).
-- Addresses, amounts, tx hashes: **Geist Mono** (self-hosted via `@fontsource/geist-mono`, weights 400, 500, 600).
-- Replaces the previous Inter/system stack. Not the reference site's typeface.
+- Display and body: **Wix Madefor Display Variable** (OFL, self-hosted via `@fontsource-variable/wix-madefor-display`).
+- Addresses, amounts, tx hashes: **Geist Mono** (self-hosted via `@fontsource/geist-mono`).
+- Headlines weight 500 to 600, slightly tight tracking. Hero 34px mobile, 56px desktop.
 
 ## Colour tokens (`:root`)
-
 | Token | Value | Use |
 |---|---|---|
-| `--color-ink` | `#14122b` | Body text. About 16:1 on the backdrop. |
-| `--color-muted` | `#55526e` | Secondary text. At least 4.5:1 on the glass and on the backdrop. |
-| `--color-line` | `rgb(20 18 43 / 0.12)` | Hairlines. |
-| `--color-accent` | `rgb(105 65 198)` | Primary buttons and links. White text on it is about 7:1. |
+| `--color-accent` | `rgb(45 100 214)` | Primary buttons and links. White on it is about 5.4:1. |
+| `--color-ink` | `#111418` | Body and headline text. |
+| `--color-muted` | `#5b6170` | Secondary text. 5.8:1 on the off-white field, 6.2:1 on white. |
+| `--color-line` | `rgb(17 20 24 / 0.09)` | Hairlines and card borders. |
+| `--color-navy` | `#111b33` | The one contrasting band (closing CTA). White text on it is 17:1. |
+| `--color-warm` | `rgb(232 150 52)` | Icons only. |
+| red | `red-700` / `red-50` | The "Blocked by contract" state only, plus form error text. |
 
 ## Surfaces
-
-- **Backdrop:** fixed mesh gradient plus a faint SVG noise layer (`body::before` and `body::after`). It exists so the glass has something to refract.
-- **`.glass`:** `backdrop-filter: blur(18px) saturate(170%)`, a translucent white gradient, a 1px light border, and an inset highlight. With no backdrop-filter support it falls back to 96% opaque white.
-- **Solid, never glass:** the site nav (opaque white, no blur, sticky), the invoice paper, form fields, the ledger table, and the red "Blocked by contract" card (`bg-red-50`, 2px `red-700` border, `red-950` text).
-- **Blur budget:** at most about three glass layers in one viewport. The landing hero uses one, the stats band one, and section cards one each.
+- **Field:** `#f7f7f8` with a faint dot texture (`body::before`).
+- **Cards:** white, 1rem radius, one soft shadow (`--shadow-card`). Bento cards are solid white.
+- **Frosted panels (`.glass`):** real content panels only. `blur(12px) saturate(120%)`, a translucent white gradient, a soft shadow.
+- **Never glass:** the header, the menu panel, inputs, the invoice paper, the ledger table, the red BlockedCard.
+- **Coloured sections:** the dashboard preview sits in a soft blue panel that fades out at the bottom; the closing CTA is the navy band.
 
 ## Motion
+- Reveals 450ms ease-out. Route fade 300ms. Status fades 280ms.
+- The hero demo loop shows the payment story. Hero floats stop under reduced motion.
+- Nothing delays a payment action. Reduced motion shows final states.
 
-- CSS keyframes plus IntersectionObserver (`src/components/motion.tsx`). No animation library.
-- Entrance and scroll reveal: 700ms, ease-out `cubic-bezier(.2,.7,.2,1)`, staggered with `--d`.
-- Hero visual: slow float, 7s.
-- Route change: a 450ms fade-and-rise on the page wrapper.
-- Stats: count-up over 900ms, once.
-- App screens: only the route fade. No motion on payment actions.
-- `prefers-reduced-motion`: animations are cut to 0.01ms, reveals show at once, counters show their final value.
+## Spacing and radius
+- Spacing on a 4/8 scale. Radius family: cards 1rem, inner tiles 0.75rem, inputs and chips 0.5rem, pills for labels and primary buttons only.

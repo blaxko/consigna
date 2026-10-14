@@ -4,7 +4,7 @@ import { arc, arcTransport } from "./chain.ts";
 
 // Arc mainnet is the only chain in this config. No testnet is listed anywhere.
 
-/** Public site URL, used as WalletConnect and MetaMask dapp metadata and in the "Open in MetaMask" link. */
+/** Public site URL. Fallback for wallet dapp metadata when no window is present (the live page uses its own origin). */
 export const LIVE_URL = "https://consigna-production.up.railway.app";
 
 /** WalletConnect needs a project id from cloud.reown.com. Without one, that option is hidden and the rest still works. */

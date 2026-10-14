@@ -6,7 +6,7 @@ const STEPS = [
   {
     n: "01",
     title: "Create",
-    body: "The issuer creates an invoice. Its id is derived from the issuer and a reference, so nobody else can take it. Amount, token and payee are fixed on-chain.",
+    body: "The issuer creates an invoice. Its ID comes from the issuer and a reference, so no one else can claim it. Amount, token and payee are fixed on-chain.",
   },
   {
     n: "02",
@@ -40,7 +40,7 @@ export function HowItWorks() {
       </ol>
 
       <Reveal>
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="flex flex-wrap gap-3">
           <Link to="/why-arc" className="btn-secondary">
             Why Arc
           </Link>

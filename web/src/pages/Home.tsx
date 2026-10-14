@@ -5,7 +5,6 @@ import { Reveal } from "../components/motion.tsx";
 import { HeroFloats } from "../components/landing/HeroFloats.tsx";
 import { BentoShowcase } from "../components/landing/BentoShowcase.tsx";
 import { DashboardPreview } from "../components/landing/DashboardPreview.tsx";
-import { Logo } from "../components/Logo.tsx";
 
 const PROBLEM_FIX_RESULT = [
   { label: "Problem", text: "Stablecoin duplicates settle before anyone notices." },
@@ -23,10 +22,6 @@ export function Home() {
 
           <Reveal>
             <div className="relative flex max-w-2xl flex-col items-center gap-6 text-center">
-              <div className="flex size-16 items-center justify-center rounded-2xl border border-[color:var(--color-line)] bg-white text-[color:var(--color-ink)] shadow-[0_16px_32px_-20px_rgb(17_20_24/0.25)]">
-                <Logo size={30} markOnly />
-              </div>
-
               <h1 className="font-display text-[34px] font-medium leading-[1.08] tracking-[-0.02em] sm:text-[48px] lg:text-[56px]">
                 <span className="block text-[color:var(--color-ink)]">One invoice. One payment.</span>
                 <span className="block text-[color:var(--color-muted)]">Enforced by Arc.</span>
@@ -36,7 +31,7 @@ export function Home() {
                 Consigna stops a duplicate USDC payment in the contract, before it settles.
               </p>
 
-              <div className="flex flex-wrap items-center justify-center gap-5">
+              <div className="flex flex-wrap items-center justify-center gap-6">
                 <Link to="/new" className="btn-primary">
                   Launch app
                 </Link>
@@ -57,7 +52,7 @@ export function Home() {
 
       <section className="flex flex-col gap-12">
         <Reveal>
-          <SectionHead label="Why it holds" title="Keep the books honest" sub="Five properties you can check on Arc, not promises." />
+          <SectionHead label="Why it holds" title="Keep the books honest" sub="What you can check on Arc, not promises." />
         </Reveal>
         <BentoShowcase />
       </section>
@@ -78,14 +73,14 @@ export function Home() {
       </section>
 
       <Reveal>
-        <section className="flex flex-col items-center gap-5 py-6 text-center">
-          <h2 className="font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">Put your next invoice on Arc.</h2>
-          <p className="max-w-md text-[color:var(--color-muted)]">Create the invoice, send the link, and it can be paid once.</p>
-          <div className="flex flex-wrap items-center justify-center gap-5">
-            <Link to="/dashboard" className="btn-secondary">
+        <section className="flex flex-col items-center gap-6 rounded-[var(--radius-card)] bg-[color:var(--color-navy)] px-6 py-16 text-center text-white sm:px-12">
+          <h2 className="font-display text-3xl font-medium tracking-[-0.01em] text-white sm:text-4xl">Put your next invoice on Arc.</h2>
+          <p className="max-w-md text-[color:var(--color-navy-muted)]">Create the invoice and send the link. It can be paid once.</p>
+          <div className="flex flex-wrap items-center justify-center gap-6">
+            <Link to="/dashboard" className="btn-light">
               Open app
             </Link>
-            <Link to="/proof" className="text-sm font-semibold text-[color:var(--color-ink)] underline underline-offset-4">
+            <Link to="/proof" className="text-sm font-semibold text-white underline underline-offset-4">
               See the proof
             </Link>
           </div>

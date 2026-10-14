@@ -194,7 +194,7 @@ export function NewInvoice() {
           <CheckCircle className="size-5 text-[color:var(--color-accent)]" aria-hidden="true" />
           <h1 className="text-xl font-semibold">Invoice created on Arc</h1>
         </div>
-        <div className="glass p-5">
+        <div className="rounded-xl border border-[color:var(--color-line)] bg-white p-5">
           <p className="text-sm text-[color:var(--color-muted)]">Payment link</p>
           <p className="mt-1 break-all font-mono text-sm">{link}</p>
           <div className="mt-4 flex items-center gap-3">
@@ -296,7 +296,7 @@ export function NewInvoice() {
         <p className="mt-1 text-sm text-[color:var(--color-muted)]">Amounts are in USDC on Arc mainnet.</p>
       </div>
 
-      <div className="flex flex-col gap-4 glass p-6">
+      <div className="flex flex-col gap-4 rounded-xl border border-[color:var(--color-line)] bg-white p-6">
         <Input
           label="Reference"
           placeholder="INV-0042"
@@ -319,7 +319,7 @@ export function NewInvoice() {
         <fieldset className="flex flex-col gap-3">
           <Label>Line items</Label>
           {lines.map((l, i) => (
-            <div key={i} className="flex flex-col gap-3 rounded-[1.25rem] border border-[color:var(--color-line)] bg-white p-4 shadow-[0_1px_2px_rgb(17_20_24/0.04),0_12px_24px_-16px_rgb(17_20_24/0.12)]">
+            <div key={i} className="flex flex-col gap-3 rounded-xl border border-[color:var(--color-line)] bg-white p-4">
               <Input
                 aria-label={`Item ${i + 1} description`}
                 placeholder="Description"

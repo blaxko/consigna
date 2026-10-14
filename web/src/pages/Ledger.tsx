@@ -128,7 +128,7 @@ export function Ledger(props: LedgerProps = {}) {
   const scope = filterInvoices(rows, filter);
   const sums = totals(rows);
 
-  const panel = embedded ? "rounded-xl border border-[color:var(--color-line)] bg-white" : "glass";
+  const panel = "rounded-xl border border-[color:var(--color-line)] bg-white";
 
   return (
     <section className="flex flex-col gap-6">
@@ -165,7 +165,7 @@ export function Ledger(props: LedgerProps = {}) {
       ) : (
         <>
           {!embedded && (
-            <dl className="grid grid-cols-2 gap-4 glass p-5 text-sm sm:max-w-md">
+            <dl className="grid grid-cols-2 gap-4 rounded-xl border border-[color:var(--color-line)] bg-white p-5 text-sm sm:max-w-md">
               <div>
                 <dt className="text-[color:var(--color-muted)]">Paid</dt>
                 <dd className="text-lg font-semibold tabular-nums">{formatUsdc(sums.paid)} USDC</dd>

@@ -38,7 +38,7 @@ export function Proof() {
       </Reveal>
 
       <Reveal>
-        <ul className="overflow-hidden rounded-[1.25rem] border border-[color:var(--color-line)] bg-white shadow-[0_24px_48px_-28px_rgb(17_20_24/0.16)]">
+        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white shadow-[var(--shadow-card)]">
           {rows.map((r) => (
             <li
               key={r.label}

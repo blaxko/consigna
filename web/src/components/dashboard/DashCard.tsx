@@ -5,7 +5,7 @@ import { formatUsdc } from "../../lib/format.ts";
 export function DashCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`flex min-w-0 flex-col gap-3 rounded-[1.25rem] border border-[color:var(--color-line)] bg-white p-5 shadow-[0_24px_48px_-28px_rgb(17_20_24/0.16)] ${className}`}
+      className={`flex min-w-0 flex-col gap-3 rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-6 shadow-[var(--shadow-card)] ${className}`}
     >
       {children}
     </div>

@@ -8,3 +8,8 @@
 - **Not in scope:** invented users, volumes, logos or testimonials; a testnet of any kind.
 - **Surfaces:** marketing (`/`, `/how-it-works`, `/why-arc`, `/proof`) in Persuade mode. App screens (`/new`, `/i/:id`, `/ledger/:issuer`) in Operate mode.
 - **Brand feel:** calm, exact, financial-grade. Glass is a surface treatment, not a theme.
+
+## Current direction (design pass v3)
+- Calm and specific to Consigna. The header is solid and opaque, with ☰ on mobile. Pages are separate per nav item.
+- Wallet: MetaMask (approve in the MetaMask app, return to this browser), WalletConnect (QR on desktop, wallet list on mobile), and every detected browser wallet. Users stay in their own browser.
+- No buzzwords, no fake stats, no testimonials. The landing states the four true facts (1 payment per invoice, under 1s finality, about $0.01 per transaction, 0 admin keys). Demo invoices and tiles are labelled sample data.

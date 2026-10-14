@@ -366,7 +366,7 @@ export function PayInvoice() {
           )}
 
           {dupOpen && !dupResult && (
-            <div className="flex flex-col gap-3 glass p-5 text-sm">
+            <div className="flex flex-col gap-3 rounded-xl border border-[color:var(--color-line)] bg-white p-5 text-sm">
               <p>This sends a real transaction to show the contract refusing it. It costs about $0.01 in fees and no USDC is transferred.</p>
               <div className="flex flex-wrap gap-3">
                 {!isConnected ? (
@@ -428,7 +428,7 @@ export function PayInvoice() {
       )}
 
       {invoice.status === "open" && step === "review" && (
-        <div className="flex flex-col gap-4 glass p-6">
+        <div className="flex flex-col gap-4 rounded-xl border border-[color:var(--color-line)] bg-white p-6">
           <h2 className="text-base font-semibold">Review payment</h2>
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt className="text-[color:var(--color-muted)]">Amount</dt>
