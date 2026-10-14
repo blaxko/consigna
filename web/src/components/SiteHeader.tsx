@@ -11,19 +11,21 @@ const LINKS = [
 ];
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex min-h-11 items-center rounded-md px-2 font-medium transition duration-100 ease-linear ${
+  `inline-flex min-h-11 items-center rounded-md px-2 text-[15px] font-medium transition duration-200 ease-out ${
     isActive ? "text-[color:var(--color-accent)]" : "text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)]"
   }`;
 
 /**
- * Site header. One compact row on every screen: logo left, then Launch app and ☰ on the right.
- * Below 1024px the links live in the menu. From 1024px they sit inline and ☰ is hidden.
- * Solid and opaque with a hairline border. No blur, no glass, no shadow. Sticky, so it reserves its own space.
+ * Site header. Solid and opaque, hairline border, no glow and no blur. Sticky, so it reserves its own space.
+ * - marketing: logo, then ☰ on mobile and tablet. From 1024px the links sit inline with a quiet "Open app" text link, and ☰ hides.
+ * - app: logo, then the wallet control and ☰ at every width.
+ * The Launch app button is not in the header. It is the hero's button only.
  */
-export function SiteHeader({ right, cta = true }: { right?: ReactNode; cta?: boolean }) {
+export function SiteHeader({ right, variant = "marketing" }: { right?: ReactNode; variant?: "marketing" | "app" }) {
   const { address } = useAccount();
   const location = useLocation();
   const ledgerTo = `/ledger/${address ?? DEMO_ISSUER}`;
+  const isMarketing = variant === "marketing";
 
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -80,33 +82,34 @@ export function SiteHeader({ right, cta = true }: { right?: ReactNode; cta?: boo
     };
   }, [open]);
 
-  const allLinks = [...LINKS, { to: ledgerTo, label: "Ledger" }];
+  // The menu carries every destination. "Open app" goes to the dashboard.
+  const menuLinks = [...LINKS, { to: "/dashboard", label: "Open app" }, { to: ledgerTo, label: "Ledger" }];
 
   return (
-    <header
-      ref={headerRef}
-      className="sticky top-0 z-30 border-b border-[color:var(--color-line)] bg-white"
-    >
+    <header ref={headerRef} className="sticky top-0 z-30 border-b border-[color:var(--color-line)] bg-white">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 lg:h-[72px] lg:gap-8 lg:px-6">
         <Link to="/" aria-label="Consigna home" className="shrink-0 rounded-md text-[color:var(--color-ink)]">
           <Logo size={26} />
         </Link>
 
-        <nav aria-label="Main" className="hidden flex-1 items-center gap-1 lg:flex">
-          {allLinks.map((l) => (
-            <NavLink key={l.label} to={l.to} className={linkClass}>
-              {l.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="flex shrink-0 items-center gap-2 lg:gap-3">
-          {right}
-          {cta && (
-            <Link to="/new" className="btn-primary min-h-11 !px-4 !py-2 text-sm !shadow-none">
-              Launch app
+        {isMarketing && (
+          <nav aria-label="Main" className="hidden flex-1 items-center gap-1 lg:flex">
+            {[...LINKS, { to: ledgerTo, label: "Ledger" }].map((l) => (
+              <NavLink key={l.label} to={l.to} className={linkClass}>
+                {l.label}
+              </NavLink>
+            ))}
+            <Link
+              to="/dashboard"
+              className="ml-auto inline-flex min-h-11 items-center px-2 text-[15px] font-medium text-[color:var(--color-accent)] underline-offset-4 hover:underline"
+            >
+              Open app
             </Link>
-          )}
+          </nav>
+        )}
+
+        <div className={`flex shrink-0 items-center gap-2 ${isMarketing ? "" : "flex-1 justify-end lg:gap-3"}`}>
+          {right}
           <button
             ref={toggleRef}
             type="button"
@@ -120,7 +123,9 @@ export function SiteHeader({ right, cta = true }: { right?: ReactNode; cta?: boo
                 setOpen(true);
               }
             }}
-            className="flex size-11 items-center justify-center rounded-full text-[color:var(--color-ink)] transition duration-100 ease-linear hover:bg-[rgb(20_18_43/0.06)] lg:hidden"
+            className={`flex size-11 items-center justify-center rounded-full text-[color:var(--color-ink)] transition duration-200 ease-out hover:bg-[rgb(20_18_43/0.06)] ${
+              isMarketing ? "lg:hidden" : ""
+            }`}
           >
             <span aria-hidden="true" className={`menu-icon ${open ? "is-open" : ""}`}>
               <span />
@@ -135,10 +140,12 @@ export function SiteHeader({ right, cta = true }: { right?: ReactNode; cta?: boo
         id="site-menu"
         ref={panelRef}
         inert={!open}
-        className={`menu-panel absolute inset-x-0 top-full border-b border-[color:var(--color-line)] bg-white lg:hidden ${open ? "is-open" : ""}`}
+        className={`menu-panel absolute inset-x-0 top-full border-b border-[color:var(--color-line)] bg-white ${
+          isMarketing ? "lg:hidden" : ""
+        } ${open ? "is-open" : ""}`}
       >
         <nav aria-label="Menu" className="mx-auto flex max-w-6xl flex-col px-4 py-2">
-          {allLinks.map((l) => (
+          {menuLinks.map((l) => (
             <NavLink
               key={l.label}
               to={l.to}

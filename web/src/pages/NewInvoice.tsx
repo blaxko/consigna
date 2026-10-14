@@ -6,7 +6,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Label } from "@/components/base/input/label";
 import { HintText } from "@/components/base/input/hint-text";
-import { CheckCircle, AlertCircle, Copy01, Clock } from "@untitledui/icons";
+import { CheckCircle, AlertCircle, Copy01, Clock, XClose } from "@untitledui/icons";
 import { InvoicePaper } from "../components/InvoicePaper.tsx";
 import { CONSIGNA_ADDRESS, EXPLORER, USDC_ADDRESS } from "../lib/chain.ts";
 import { parseUsdc, formatUsdc } from "../lib/format.ts";
@@ -318,13 +318,8 @@ export function NewInvoice() {
 
         <fieldset className="flex flex-col gap-3">
           <Label>Line items</Label>
-          <div className="hidden text-xs text-[color:var(--color-muted)] sm:grid sm:grid-cols-[1fr_5rem_8rem] sm:gap-2" aria-hidden="true">
-            <span>Description</span>
-            <span>Qty</span>
-            <span>Unit price (USDC)</span>
-          </div>
           {lines.map((l, i) => (
-            <div key={i} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_5rem_8rem]">
+            <div key={i} className="flex flex-col gap-3 rounded-lg border border-[color:var(--color-line)] bg-white p-3">
               <Input
                 aria-label={`Item ${i + 1} description`}
                 placeholder="Description"
@@ -332,14 +327,30 @@ export function NewInvoice() {
                 onChange={(v) => setLine(i, { desc: v })}
                 isInvalid={Boolean(errors[`line${i}`])}
               />
-              <Input aria-label={`Item ${i + 1} quantity`} placeholder="Qty" value={l.qty} onChange={(v) => setLine(i, { qty: v })} />
-              <Input
-                aria-label={`Item ${i + 1} unit price in USDC`}
-                placeholder="Unit price (USDC)"
-                value={l.unit}
-                onChange={(v) => setLine(i, { unit: v })}
-                isInvalid={Boolean(errors[`line${i}`])}
-              />
+              <div className="flex items-end gap-3">
+                <div className="w-24 shrink-0">
+                  <Input aria-label={`Item ${i + 1} quantity`} placeholder="Qty" value={l.qty} onChange={(v) => setLine(i, { qty: v })} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Input
+                    aria-label={`Item ${i + 1} unit price in USDC`}
+                    placeholder="Unit price (USDC)"
+                    value={l.unit}
+                    onChange={(v) => setLine(i, { unit: v })}
+                    isInvalid={Boolean(errors[`line${i}`])}
+                  />
+                </div>
+                {lines.length > 1 && (
+                  <button
+                    type="button"
+                    aria-label={`Remove item ${i + 1}`}
+                    onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full text-[color:var(--color-muted)] transition duration-200 ease-out hover:bg-[rgb(20_18_43/0.06)] hover:text-[color:var(--color-ink)]"
+                  >
+                    <XClose className="size-5" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
               {errors[`line${i}`] && <HintText isInvalid>{errors[`line${i}`]}</HintText>}
             </div>
           ))}

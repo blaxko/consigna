@@ -36,8 +36,10 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 
 /** Flow D (PRD 5.5): /ledger/:issuer. Read-only without a wallet. Cancel is issuer-only, on Open rows. */
-export function Ledger() {
-  const { issuer = "" } = useParams();
+export function Ledger({ issuer: issuerProp }: { issuer?: string } = {}) {
+  // The dashboard embeds this table with its own issuer. The route passes the issuer in the URL.
+  const { issuer: issuerParam = "" } = useParams();
+  const issuer = issuerProp ?? issuerParam;
   const validIssuer = /^0x[0-9a-fA-F]{40}$/.test(issuer);
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();

@@ -6,6 +6,7 @@ import { Placeholder } from "./pages/Placeholder.tsx";
 import { NewInvoice } from "./pages/NewInvoice.tsx";
 import { PayInvoice } from "./pages/PayInvoice.tsx";
 import { Ledger } from "./pages/Ledger.tsx";
+import { Dashboard } from "./pages/Dashboard.tsx";
 
 // Marketing layout: opaque nav, the page, one-line footer.
 function MarketingLayout() {
@@ -28,7 +29,7 @@ function AppLayout() {
   const { pathname } = useLocation();
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader cta={false} right={<WalletButton />} />
+      <SiteHeader variant="app" right={<WalletButton />} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
         <div key={pathname} className="page-in">
           <Outlet />
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
   {
     element: <AppLayout />,
     children: [
+      { path: "dashboard", element: <Dashboard /> },
       { path: "new", element: <NewInvoice /> },
       { path: "i/:id", element: <PayInvoice /> },
       { path: "ledger/:issuer", element: <Ledger /> },

@@ -34,11 +34,11 @@ export function BlockedCard({
         <XCircle className="mt-1 size-8 shrink-0 text-red-700" aria-hidden="true" />
         <div className="flex flex-col gap-2">
           {/* Same copy as blockedCopy(); the line break sits at the em dash so the address never wraps mid-way. */}
-          <p className="text-xl font-bold leading-snug sm:text-2xl">
+          <p className="text-lg font-semibold leading-snug sm:text-xl">
             {blockedCopy(payer, paidAt).split(" — ")[0]} —
             <span className="block">{blockedCopy(payer, paidAt).split(" — ")[1]}</span>
           </p>
-          <p className="text-base">No USDC moved. Only gas was charged.</p>
+          <p className="text-sm">No USDC moved. Only gas was charged.</p>
         </div>
       </div>
       <a

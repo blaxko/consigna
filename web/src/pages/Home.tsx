@@ -1,13 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { BlockedCard } from "../components/BlockedCard.tsx";
-import { InvoicePaper } from "../components/InvoicePaper.tsx";
 import { CountUp, Reveal } from "../components/motion.tsx";
-import { BLOCKED_DUPLICATE_TX, DEMO_ISSUER } from "../lib/demo.ts";
-
-// Static sample data for the hero only. It is labelled "Sample data" on screen and is never sent anywhere.
-const SAMPLE_PAYER = "0x9f3c1a7b2d4e6f8a0b1c2d3e4f5a6b7c8d9e0f12";
-const SAMPLE_PAID_AT = Math.floor(Date.UTC(2026, 9, 13, 10, 42, 7) / 1000);
+import { HeroDemo } from "../components/HeroDemo.tsx";
 
 const POINTS = [
   {
@@ -27,18 +21,18 @@ const POINTS = [
   },
 ];
 
-/** Landing: hero with real components, stats strip, three short points, closing CTA. */
+/** Landing: one hero with one primary action and the demo, the stats, three points, and a quiet closing. */
 export function Home() {
   return (
     <div className="flex flex-col gap-24 pb-8 sm:gap-32">
       <section className="grid items-center gap-12 pt-10 sm:pt-16 lg:grid-cols-2 lg:gap-16">
         <Reveal>
           <div className="flex flex-col gap-6">
-            <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
+            <h1 className="text-[34px] font-semibold leading-[1.12] tracking-tight lg:text-[56px]">
               One invoice. One payment.
               <span className="block text-[color:var(--color-accent)]">Enforced by Arc.</span>
             </h1>
-            <p className="max-w-lg text-lg leading-relaxed text-[color:var(--color-muted)]">
+            <p className="max-w-lg text-base leading-relaxed text-[color:var(--color-muted)] sm:text-[17px]">
               Duplicate USDC payments settle before anyone notices. Consigna stops the second one in the contract.
             </p>
             <div className="flex flex-wrap gap-3">
@@ -53,26 +47,7 @@ export function Home() {
         </Reveal>
 
         <Reveal delay={150}>
-          <div className="flex flex-col gap-4">
-            <div className="glass glass-liquid float p-5 sm:p-6">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted)]">
-                Sample data
-              </p>
-              <InvoicePaper
-                ref_="INV-0042"
-                issuer={DEMO_ISSUER}
-                status="paid"
-                amountUnits={500_000n}
-                lines={[{ desc: "Design retainer", qty: 1, unit: "0.50" }]}
-              />
-            </div>
-            <div className="ml-auto w-[94%]">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted)]">
-                Sample data
-              </p>
-              <BlockedCard payer={SAMPLE_PAYER} paidAt={SAMPLE_PAID_AT} txHash={BLOCKED_DUPLICATE_TX} scroll={false} />
-            </div>
-          </div>
+          <HeroDemo />
         </Reveal>
       </section>
 
@@ -87,15 +62,15 @@ export function Home() {
 
       <section className="flex flex-col gap-10">
         <Reveal>
-          <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Built so the rules hold.</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Built so the rules hold.</h2>
         </Reveal>
         <div className="grid gap-5 md:grid-cols-3">
           {POINTS.map((p, i) => (
             <Reveal key={p.n} delay={i * 120}>
               <article className="glass flex h-full flex-col gap-4 p-6">
-                <span className="font-mono text-sm font-semibold text-[color:var(--color-accent)]">{p.n}</span>
-                <h3 className="font-display text-xl font-bold leading-snug">{p.title}</h3>
-                <p className="text-[color:var(--color-muted)]">{p.body}</p>
+                <span className="font-mono text-sm font-medium text-[color:var(--color-accent)]">{p.n}</span>
+                <h3 className="text-lg font-semibold leading-snug">{p.title}</h3>
+                <p className="text-[15px] leading-relaxed text-[color:var(--color-muted)]">{p.body}</p>
               </article>
             </Reveal>
           ))}
@@ -104,11 +79,11 @@ export function Home() {
 
       <Reveal>
         <section className="glass flex flex-col items-center gap-6 px-6 py-14 text-center">
-          <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Put your next invoice on Arc.</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Put your next invoice on Arc.</h2>
           <p className="max-w-md text-[color:var(--color-muted)]">Create the invoice, send the link, and it can be paid once.</p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Link to="/new" className="btn-primary">
-              Launch app
+            <Link to="/dashboard" className="btn-secondary">
+              Open app
             </Link>
             <Link to="/proof" className="btn-secondary">
               See the proof
@@ -123,7 +98,7 @@ export function Home() {
 function Stat({ value, caption }: { value: ReactNode; caption: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="font-display text-4xl font-bold tracking-tight sm:text-5xl">{value}</p>
+      <p className="text-3xl font-semibold tracking-tight sm:text-4xl">{value}</p>
       <p className="text-sm text-[color:var(--color-muted)]">{caption}</p>
     </div>
   );

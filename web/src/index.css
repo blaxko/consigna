@@ -4,7 +4,7 @@
 
 /* Colour tokens used across the app. --color-accent matches the Untitled UI brand scale. */
 :root {
-  --color-accent: rgb(105 65 198);
+  --color-accent: rgb(96 72 170);
   --color-ink: #14122b;
   --color-muted: #55526e;
   --color-line: rgb(20 18 43 / 0.12);
@@ -57,17 +57,17 @@ body::after {
   padding: 0.7rem 1.25rem;
   font-weight: 600;
   font-size: 0.95rem;
-  transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  transition: transform 200ms ease-out, background-color 200ms ease-out, box-shadow 200ms ease-out;
 }
 
 .btn-primary {
   background: var(--color-accent);
   color: #fff;
-  box-shadow: 0 10px 24px -12px rgb(105 65 198 / 0.8);
+  box-shadow: 0 1px 2px rgb(20 18 43 / 0.12);
 }
 
 .btn-primary:hover {
-  background: rgb(92 55 180);
+  background: rgb(86 63 158);
 }
 
 .btn-secondary {

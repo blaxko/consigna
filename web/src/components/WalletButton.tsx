@@ -1,6 +1,6 @@
 import { useAccount } from "wagmi";
 import { shortAddress } from "../lib/format.ts";
-import { useWalletPicker } from "./WalletPicker.tsx";
+import { prefetchWalletConnectors, useWalletPicker } from "./WalletPicker.tsx";
 
 /** Header wallet control. Always "Connect wallet" when disconnected. Opens the shared picker. */
 export function WalletButton() {
@@ -12,7 +12,9 @@ export function WalletButton() {
       <button
         type="button"
         onClick={open}
-        className="btn-secondary min-h-11 !px-4 !py-2 text-sm"
+        onPointerEnter={prefetchWalletConnectors}
+        onTouchStart={prefetchWalletConnectors}
+        className="btn-secondary min-h-11 !px-4 !py-2 whitespace-nowrap text-sm"
       >
         Connect wallet
       </button>
@@ -23,7 +25,7 @@ export function WalletButton() {
     <button
       type="button"
       onClick={open}
-      className="btn-secondary min-h-11 !px-4 !py-2 font-mono text-sm"
+      className="btn-secondary min-h-11 !px-4 !py-2 whitespace-nowrap font-mono text-sm"
       title={address}
     >
       {shortAddress(address)}
