@@ -9,3 +9,6 @@ dist/
 web/dist/
 web/.env
 *.log
+
+# Reference screenshots kept local only
+docs/inspo/
