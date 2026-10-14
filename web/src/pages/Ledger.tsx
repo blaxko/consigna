@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router";
-import type { Address, Hex } from "viem";
-import { useAccount, usePublicClient, useSwitchChain, useWalletClient } from "wagmi";
+import type { Hex } from "viem";
+import { useAccount, useSwitchChain, useWalletClient, usePublicClient } from "wagmi";
 import { Button } from "@/components/base/buttons/button";
 import { StatusBadge } from "../components/StatusBadge.tsx";
 import { Skeleton } from "../components/Skeleton.tsx";
+import { useLedgerData } from "../components/dashboard/useLedgerData.ts";
 import { EXPLORER } from "../lib/chain.ts";
 import { formatUsdc, shortAddress } from "../lib/format.ts";
 import { formatShortTime, isUserRejection, COPY } from "../lib/invoice-logic.ts";
@@ -20,9 +21,7 @@ import {
 } from "../lib/ledger-logic.ts";
 import {
   cancel,
-  listInvoices,
   NotConfirmedError,
-  paidEvent,
   waitForConfirmation,
   type Invoice,
 } from "../lib/consigna.ts";
@@ -35,67 +34,47 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
+export type LedgerProps = {
+  issuer?: string;
+  /** Dashboard passes the invoice list it already loaded. When set, Ledger does not read the chain itself. */
+  rows?: Invoice[];
+  paidTx?: Record<string, Hex>;
+  /** Embedded in the dashboard: no page heading or issuer line, and the summary tiles are left out. */
+  embedded?: boolean;
+  /** Embedded only: called after a cancel so the owner re-reads from chain. */
+  onChanged?: () => void;
+};
+
 /** Flow D (PRD 5.5): /ledger/:issuer. Read-only without a wallet. Cancel is issuer-only, on Open rows. */
-export function Ledger({ issuer: issuerProp }: { issuer?: string } = {}) {
+export function Ledger(props: LedgerProps = {}) {
   // The dashboard embeds this table with its own issuer. The route passes the issuer in the URL.
   const { issuer: issuerParam = "" } = useParams();
-  const issuer = issuerProp ?? issuerParam;
+  const issuer = props.issuer ?? issuerParam;
   const validIssuer = /^0x[0-9a-fA-F]{40}$/.test(issuer);
-  const publicClient = usePublicClient();
+  const embedded = Boolean(props.embedded || props.rows);
   const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
   const { address, chainId, isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
 
-  const [rows, setRows] = useState<Invoice[] | undefined>(undefined); // undefined = loading
-  const [paidTx, setPaidTx] = useState<Record<string, Hex>>({});
+  // Own read only on the route. When the dashboard passes rows, this hook stays idle.
+  const own = useLedgerData(issuer, props.rows === undefined);
+  const rows = props.rows ?? own.rows; // undefined = loading
+  const paidTx = props.paidTx ?? own.paidTx;
+  const loadError = props.rows ? undefined : own.loadError;
+
   const [filter, setFilter] = useState<Filter>("all");
   const [confirmId, setConfirmId] = useState<Hex | undefined>();
   const [busyId, setBusyId] = useState<Hex | undefined>();
   const [message, setMessage] = useState<string | undefined>();
   const [csvBusy, setCsvBusy] = useState(false);
-  const [loadError, setLoadError] = useState<string | undefined>();
 
   const isIssuer = Boolean(address && validIssuer && address.toLowerCase() === issuer.toLowerCase());
 
-  /** E14: when Arc cannot be reached, say so and retry with backoff (at most five times). */
-  async function load(attempt = 0) {
-    if (!publicClient || !validIssuer) {
-      setRows([]);
-      return;
-    }
-    let list: Invoice[];
-    try {
-      list = await listInvoices(publicClient, issuer as Address);
-    } catch {
-      setLoadError(COPY.rpcDown);
-      if (attempt < 5) window.setTimeout(() => void load(attempt + 1), 3_000 * (attempt + 1));
-      return;
-    }
-    setLoadError(undefined);
-    setRows(list);
-    // One single-block InvoicePaid lookup per paid invoice, at its paidBlock only (CLAUDE.md §9).
-    const entries = await Promise.all(
-      list
-        .filter((i) => i.status === "paid")
-        .map(async (i) => {
-          try {
-            const ev = await paidEvent(publicClient, i.id, i.paidBlock);
-            return [i.id, ev?.txHash] as const;
-          } catch (e) {
-            console.error("paidEvent failed", i.ref, e);
-            return [i.id, undefined] as const;
-          }
-        }),
-    );
-    const map: Record<string, Hex> = {};
-    for (const [id, tx] of entries) if (tx) map[id] = tx;
-    setPaidTx(map);
+  function reloadFromChain() {
+    if (props.onChanged) props.onChanged();
+    else own.reload();
   }
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [issuer, publicClient]);
 
   async function doCancel(inv: Invoice) {
     if (!publicClient || !walletClient) return;
@@ -111,7 +90,7 @@ export function Ledger({ issuer: issuerProp }: { issuer?: string } = {}) {
       else if (!isUserRejection(e)) setMessage((e as Error).message?.split("\n")[0]);
     } finally {
       setBusyId(undefined);
-      await load(); // re-read from chain (NFR-R2)
+      reloadFromChain(); // re-read from chain (NFR-R2)
     }
   }
 
@@ -149,17 +128,21 @@ export function Ledger({ issuer: issuerProp }: { issuer?: string } = {}) {
   const scope = filterInvoices(rows, filter);
   const sums = totals(rows);
 
+  const panel = embedded ? "rounded-xl border border-[color:var(--color-line)] bg-white" : "glass";
+
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">Ledger</h1>
-          <p className="mt-1 font-mono text-sm text-[color:var(--color-muted)]" title={issuer}>
-            Issuer {shortAddress(issuer)}
-          </p>
-        </div>
-        {rows.length > 0 && (
-          <div className="flex flex-col items-end gap-1">
+        {!embedded && (
+          <div>
+            <h1 className="text-xl font-semibold">Ledger</h1>
+            <p className="mt-1 font-mono text-sm text-[color:var(--color-muted)]" title={issuer}>
+              Issuer {shortAddress(issuer)}
+            </p>
+          </div>
+        )}
+        {!embedded && rows.length > 0 && (
+          <div className="ml-auto flex flex-col items-end gap-1">
             <Button size="md" color="secondary" isLoading={csvBusy} onClick={downloadCsv}>
               Download CSV
             </Button>
@@ -171,7 +154,7 @@ export function Ledger({ issuer: issuerProp }: { issuer?: string } = {}) {
       </div>
 
       {rows.length === 0 ? (
-        <div className="flex flex-col gap-3 glass p-6">
+        <div className={`flex flex-col gap-3 p-6 ${panel}`}>
           <p className="text-sm">No invoices yet.</p>
           <div>
             <Link to="/new">
@@ -181,16 +164,18 @@ export function Ledger({ issuer: issuerProp }: { issuer?: string } = {}) {
         </div>
       ) : (
         <>
-          <dl className="grid grid-cols-2 gap-4 glass p-5 text-sm sm:max-w-md">
-            <div>
-              <dt className="text-[color:var(--color-muted)]">Paid</dt>
-              <dd className="text-lg font-semibold tabular-nums">{formatUsdc(sums.paid)} USDC</dd>
-            </div>
-            <div>
-              <dt className="text-[color:var(--color-muted)]">Outstanding</dt>
-              <dd className="text-lg font-semibold tabular-nums">{formatUsdc(sums.outstanding)} USDC</dd>
-            </div>
-          </dl>
+          {!embedded && (
+            <dl className="grid grid-cols-2 gap-4 glass p-5 text-sm sm:max-w-md">
+              <div>
+                <dt className="text-[color:var(--color-muted)]">Paid</dt>
+                <dd className="text-lg font-semibold tabular-nums">{formatUsdc(sums.paid)} USDC</dd>
+              </div>
+              <div>
+                <dt className="text-[color:var(--color-muted)]">Outstanding</dt>
+                <dd className="text-lg font-semibold tabular-nums">{formatUsdc(sums.outstanding)} USDC</dd>
+              </div>
+            </dl>
+          )}
 
           <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-2">
             {FILTERS.map((f) => (

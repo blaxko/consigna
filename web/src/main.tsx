@@ -6,7 +6,7 @@ import { WagmiProvider } from "wagmi";
 import { router } from "./router.tsx";
 import { wagmiConfig } from "./lib/wagmi.ts";
 import { WalletPickerProvider } from "./components/WalletPicker.tsx";
-import "@fontsource-variable/plus-jakarta-sans";
+import "@fontsource-variable/wix-madefor-display";
 import "@fontsource/geist-mono/400.css";
 import "@fontsource/geist-mono/500.css";
 import "@fontsource/geist-mono/600.css";

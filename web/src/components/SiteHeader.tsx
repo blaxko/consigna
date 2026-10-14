@@ -83,7 +83,12 @@ export function SiteHeader({ right, variant = "marketing" }: { right?: ReactNode
   }, [open]);
 
   // The menu carries every destination. "Open app" goes to the dashboard.
-  const menuLinks = [...LINKS, { to: "/dashboard", label: "Open app" }, { to: ledgerTo, label: "Ledger" }];
+  const menuLinks = [
+    ...LINKS,
+    { to: "/dashboard", label: "Open app" },
+    { to: "/new", label: "New invoice" },
+    { to: ledgerTo, label: "Ledger" },
+  ];
 
   return (
     <header ref={headerRef} className="sticky top-0 z-30 border-b border-[color:var(--color-line)] bg-white">

@@ -4,15 +4,18 @@
 
 /* Colour tokens used across the app. --color-accent matches the Untitled UI brand scale. */
 :root {
-  --color-accent: rgb(96 72 170);
-  --color-ink: #14122b;
-  --color-muted: #55526e;
-  --color-line: rgb(20 18 43 / 0.12);
+  /* One calm blue for primary actions and links. The warm accent is for icons only. */
+  --color-accent: rgb(45 100 214);
+  --color-accent-soft: rgb(45 100 214 / 0.08);
+  --color-warm: rgb(232 150 52);
+  --color-ink: #111418;
+  --color-muted: #5b6170;
+  --color-line: rgb(17 20 24 / 0.09);
   color-scheme: light;
 }
 
 html {
-  background: #ecebf5;
+  background: #f7f7f8;
   /* Anchor scrolling and the sticky header reserve their own space, so content never starts under the header. */
   scroll-padding-top: 72px;
 }
@@ -23,28 +26,20 @@ body {
   min-height: 100vh;
 }
 
-/* Backdrop for the glass: soft colour mesh plus fine noise. Fixed, so it does not repaint on scroll. */
-body::before,
-body::after {
+/* Off-white field with a very faint dot texture, as in the reference. Fixed, so it does not repaint on scroll. */
+body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-}
-
-body::before {
-  background:
-    radial-gradient(60vmax 50vmax at 12% -10%, rgb(196 181 253 / 0.8), transparent 60%),
-    radial-gradient(55vmax 50vmax at 96% 4%, rgb(167 243 208 / 0.6), transparent 60%),
-    radial-gradient(60vmax 60vmax at 62% 112%, rgb(253 186 116 / 0.5), transparent 60%),
-    linear-gradient(180deg, #f5f3fc 0%, #e8e5f4 100%);
+  background-color: #f7f7f8;
+  background-image: radial-gradient(rgb(17 20 24 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
 }
 
 body::after {
-  opacity: 0.35;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.3'/></svg>");
+  content: none;
 }
 
 /* Shared buttons for the marketing pages. Text contrast is AA on both. */
@@ -67,7 +62,7 @@ body::after {
 }
 
 .btn-primary:hover {
-  background: rgb(86 63 158);
+  background: rgb(38 86 186);
 }
 
 .btn-secondary {

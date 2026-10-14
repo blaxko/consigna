@@ -319,7 +319,7 @@ export function NewInvoice() {
         <fieldset className="flex flex-col gap-3">
           <Label>Line items</Label>
           {lines.map((l, i) => (
-            <div key={i} className="flex flex-col gap-3 rounded-lg border border-[color:var(--color-line)] bg-white p-3">
+            <div key={i} className="flex flex-col gap-3 rounded-[1.25rem] border border-[color:var(--color-line)] bg-white p-4 shadow-[0_1px_2px_rgb(17_20_24/0.04),0_12px_24px_-16px_rgb(17_20_24/0.12)]">
               <Input
                 aria-label={`Item ${i + 1} description`}
                 placeholder="Description"

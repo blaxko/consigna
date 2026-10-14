@@ -1,105 +1,96 @@
-import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { CountUp, Reveal } from "../components/motion.tsx";
+import { HairlineRow, SectionHead } from "../components/bento.tsx";
 import { HeroDemo } from "../components/HeroDemo.tsx";
+import { Reveal } from "../components/motion.tsx";
+import { HeroFloats } from "../components/landing/HeroFloats.tsx";
+import { BentoShowcase } from "../components/landing/BentoShowcase.tsx";
+import { DashboardPreview } from "../components/landing/DashboardPreview.tsx";
+import { Logo } from "../components/Logo.tsx";
 
-const POINTS = [
-  {
-    n: "01",
-    title: "The contract never holds funds",
-    body: "USDC moves from the payer straight to the issuer. There is no escrow, no pool and no refund path to get wrong.",
-  },
-  {
-    n: "02",
-    title: "No admin keys",
-    body: "The contract has no owner, no pause and no upgrade. What it does today is what it does on every later day.",
-  },
-  {
-    n: "03",
-    title: "Books from chain reads",
-    body: "The ledger and CSV are rebuilt from the chain itself. Nothing lives off-chain, so there is nothing to reconcile.",
-  },
+const PROBLEM_FIX_RESULT = [
+  { label: "Problem", text: "Stablecoin duplicates settle before anyone notices." },
+  { label: "Fix", text: "The contract refuses a second payment for the same invoice." },
+  { label: "Result", text: "Books rebuild from the chain, with nothing to reconcile." },
 ];
 
-/** Landing: one hero with one primary action and the demo, the stats, three points, and a quiet closing. */
+/** Landing: hero with one primary action and the demo, the bento, the three-part row with the dashboard, and a short close. */
 export function Home() {
   return (
     <div className="flex flex-col gap-24 pb-8 sm:gap-32">
-      <section className="grid items-center gap-12 pt-10 sm:pt-16 lg:grid-cols-2 lg:gap-16">
-        <Reveal>
-          <div className="flex flex-col gap-6">
-            <h1 className="text-[34px] font-semibold leading-[1.12] tracking-tight lg:text-[56px]">
-              One invoice. One payment.
-              <span className="block text-[color:var(--color-accent)]">Enforced by Arc.</span>
-            </h1>
-            <p className="max-w-lg text-base leading-relaxed text-[color:var(--color-muted)] sm:text-[17px]">
-              Duplicate USDC payments settle before anyone notices. Consigna stops the second one in the contract.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link to="/new" className="btn-primary">
-                Launch app
-              </Link>
-              <Link to="/how-it-works" className="btn-secondary">
-                How it works
-              </Link>
+      <section className="mx-auto w-full max-w-6xl overflow-x-clip pt-10 sm:pt-16">
+        <div className="relative flex flex-col items-center gap-10">
+          <HeroFloats />
+
+          <Reveal>
+            <div className="relative flex max-w-2xl flex-col items-center gap-6 text-center">
+              <div className="flex size-16 items-center justify-center rounded-2xl border border-[color:var(--color-line)] bg-white text-[color:var(--color-ink)] shadow-[0_16px_32px_-20px_rgb(17_20_24/0.25)]">
+                <Logo size={30} markOnly />
+              </div>
+
+              <h1 className="font-display text-[34px] font-medium leading-[1.08] tracking-[-0.02em] sm:text-[48px] lg:text-[56px]">
+                <span className="block text-[color:var(--color-ink)]">One invoice. One payment.</span>
+                <span className="block text-[color:var(--color-muted)]">Enforced by Arc.</span>
+              </h1>
+
+              <p className="max-w-lg text-base text-[color:var(--color-muted)] sm:text-[17px]">
+                Consigna stops a duplicate USDC payment in the contract, before it settles.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-center gap-5">
+                <Link to="/new" className="btn-primary">
+                  Launch app
+                </Link>
+                <Link to="/how-it-works" className="text-sm font-semibold text-[color:var(--color-ink)] underline underline-offset-4">
+                  How it works
+                </Link>
+              </div>
             </div>
-          </div>
-        </Reveal>
+          </Reveal>
+        </div>
 
         <Reveal delay={150}>
-          <HeroDemo />
+          <div className="mx-auto mt-14 max-w-md">
+            <HeroDemo />
+          </div>
         </Reveal>
       </section>
 
-      <Reveal>
-        <section aria-label="Key numbers" className="glass grid grid-cols-2 gap-8 p-6 sm:p-10 md:grid-cols-4">
-          <Stat value={<CountUp to={1} />} caption="payment per invoice" />
-          <Stat value={<span>&lt;1s</span>} caption="finality on Arc" />
-          <Stat value={<CountUp to={0.01} decimals={2} prefix="~$" />} caption="per transaction" />
-          <Stat value={<CountUp to={0} />} caption="admin keys" />
-        </section>
-      </Reveal>
-
-      <section className="flex flex-col gap-10">
+      <section className="flex flex-col gap-12">
         <Reveal>
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Built so the rules hold.</h2>
+          <SectionHead label="Why it holds" title="Keep the books honest" sub="Five properties you can check on Arc, not promises." />
         </Reveal>
-        <div className="grid gap-5 md:grid-cols-3">
-          {POINTS.map((p, i) => (
-            <Reveal key={p.n} delay={i * 120}>
-              <article className="glass flex h-full flex-col gap-4 p-6">
-                <span className="font-mono text-sm font-medium text-[color:var(--color-accent)]">{p.n}</span>
-                <h3 className="text-lg font-semibold leading-snug">{p.title}</h3>
-                <p className="text-[15px] leading-relaxed text-[color:var(--color-muted)]">{p.body}</p>
-              </article>
+        <BentoShowcase />
+      </section>
+
+      <section className="flex flex-col gap-16">
+        <HairlineRow columns={3}>
+          {PROBLEM_FIX_RESULT.map((c) => (
+            <Reveal key={c.label} className="flex flex-col gap-3 py-8 md:px-8">
+              <span className="text-xs font-medium uppercase tracking-wider text-[color:var(--color-muted)]">{c.label}</span>
+              <p className="text-lg leading-snug text-[color:var(--color-ink)]">{c.text}</p>
             </Reveal>
           ))}
-        </div>
+        </HairlineRow>
+
+        <Reveal>
+          <DashboardPreview />
+        </Reveal>
       </section>
 
       <Reveal>
-        <section className="glass flex flex-col items-center gap-6 px-6 py-14 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Put your next invoice on Arc.</h2>
+        <section className="flex flex-col items-center gap-5 py-6 text-center">
+          <h2 className="font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">Put your next invoice on Arc.</h2>
           <p className="max-w-md text-[color:var(--color-muted)]">Create the invoice, send the link, and it can be paid once.</p>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-5">
             <Link to="/dashboard" className="btn-secondary">
               Open app
             </Link>
-            <Link to="/proof" className="btn-secondary">
+            <Link to="/proof" className="text-sm font-semibold text-[color:var(--color-ink)] underline underline-offset-4">
               See the proof
             </Link>
           </div>
         </section>
       </Reveal>
-    </div>
-  );
-}
-
-function Stat({ value, caption }: { value: ReactNode; caption: string }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-3xl font-semibold tracking-tight sm:text-4xl">{value}</p>
-      <p className="text-sm text-[color:var(--color-muted)]">{caption}</p>
     </div>
   );
 }

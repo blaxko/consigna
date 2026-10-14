@@ -2,6 +2,7 @@ import { createBrowserRouter, Outlet, useLocation } from "react-router";
 import { WalletButton } from "./components/WalletButton.tsx";
 import { SiteHeader } from "./components/SiteHeader.tsx";
 import { SiteFooter } from "./components/SiteFooter.tsx";
+import { AppSidebar } from "./components/AppSidebar.tsx";
 import { Placeholder } from "./pages/Placeholder.tsx";
 import { NewInvoice } from "./pages/NewInvoice.tsx";
 import { PayInvoice } from "./pages/PayInvoice.tsx";
@@ -24,17 +25,21 @@ function MarketingLayout() {
   );
 }
 
-// App layout: the same nav (no Launch button here), the wallet control, then the screen.
+// App layout: the same header (no Launch button here) and the wallet control. On lg and up a sidebar sits on the
+// left and the screen takes the right column. Below lg the header menu covers navigation.
 function AppLayout() {
   const { pathname } = useLocation();
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader variant="app" right={<WalletButton />} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-        <div key={pathname} className="page-in">
-          <Outlet />
-        </div>
-      </main>
+      <div className="flex w-full flex-1 items-stretch">
+        <AppSidebar />
+        <main className="mx-auto w-full min-w-0 max-w-5xl flex-1 px-4 py-8 lg:mx-0 lg:px-8">
+          <div key={pathname} className="page-in">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

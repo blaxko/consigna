@@ -41,20 +41,20 @@ export function HeroDemo() {
 
   return (
     <div
-      className="glass glass-liquid relative flex flex-col gap-4 p-5 sm:p-6"
+      className="relative flex flex-col gap-4 rounded-[1.25rem] border border-[color:var(--color-line)] bg-white p-5 shadow-[0_24px_48px_-28px_rgb(17_20_24/0.18)] sm:p-6"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
       <div className="flex items-center justify-between">
-        <span className="rounded-full bg-[rgb(20_18_43/0.06)] px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted)]">
+        <span className="rounded-full border border-[color:var(--color-line)] bg-white px-3 py-1 text-xs font-medium text-[color:var(--color-muted)] shadow-[0_1px_2px_rgb(17_20_24/0.04)]">
           Demo
         </span>
         <span className="text-xs text-[color:var(--color-muted)]">Sample data</span>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-[0_1px_2px_rgb(20_18_43/0.06)]">
+      <div className="flex flex-col gap-4 rounded-xl border border-[color:var(--color-line)] bg-[#f7f7f8] p-5">
         <div className="flex items-center justify-between gap-3">
           <p className="font-mono text-base font-semibold">INV-0042</p>
           <span
